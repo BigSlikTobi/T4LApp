@@ -194,6 +194,8 @@ class _NewsState extends State<News> {
   bool showArchived = false;
   late Future<List<Article>> articlesFuture;
   List<Article> articles = [];
+  // Track articles to be excluded (articles that are already updated by newer articles)
+  List<int> excludedArticleIds = [];
   bool isLoading = false;
   String? errorMessage;
   RealtimeChannel? _subscription;
@@ -201,14 +203,71 @@ class _NewsState extends State<News> {
   @override
   void initState() {
     super.initState();
-    articlesFuture = _fetchArticlesFromSupabase();
-    _setupRealtimeSubscription();
+    _fetchExcludedArticleIds().then((_) {
+      articlesFuture = _fetchArticlesFromSupabase();
+      _setupRealtimeSubscription();
+    });
   }
 
   @override
   void dispose() {
     _subscription?.unsubscribe();
     super.dispose();
+  }
+
+  // Fetch articles IDs that are already updated by other articles
+  Future<void> _fetchExcludedArticleIds() async {
+    try {
+      // Get all article vectors that have updates
+      final articleVectors = await SupabaseService.client
+          .from('ArticleVector')
+          .select()
+          .not('update', 'is', null);
+
+      // Extract all the article IDs that are being updated
+      List<int> excludedIds = [];
+      for (var vector in articleVectors) {
+        // Parse the update array from various possible formats
+        var updateField = vector['update'];
+        if (updateField is String) {
+          try {
+            final String cleanString = updateField
+                .replaceAll('[', '')
+                .replaceAll(']', '')
+                .replaceAll(' ', '');
+
+            final List<int> updateIds =
+                cleanString
+                    .split(',')
+                    .where((s) => s.isNotEmpty)
+                    .map((s) => int.tryParse(s) ?? 0)
+                    .where((id) => id > 0)
+                    .toList();
+
+            excludedIds.addAll(updateIds);
+          } catch (e) {
+            AppLogger.error('Error parsing update array', e);
+          }
+        } else if (updateField is List) {
+          final List<int> updateIds =
+              updateField
+                  .map((item) => item is num ? item.toInt() : 0)
+                  .where((id) => id > 0)
+                  .toList();
+
+          excludedIds.addAll(updateIds);
+        }
+      }
+
+      // Update state with excluded article IDs
+      if (mounted) {
+        setState(() {
+          excludedArticleIds = excludedIds;
+        });
+      }
+    } catch (e) {
+      AppLogger.error('Error fetching excluded article IDs', e);
+    }
   }
 
   // Update setupRealtimeSubscription to handle team codes
@@ -242,17 +301,27 @@ class _NewsState extends State<News> {
             }
 
             if (shouldAddArticle) {
-              // Add the new articles to the beginning since they're newest
-              articles.insertAll(0, newArticleObjects);
-              // Sort by created_at
-              articles.sort(
-                (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                  a.createdAt ?? DateTime.now(),
-                ),
-              );
+              // Filter out articles that are in the excluded list
+              final filteredArticles =
+                  newArticleObjects
+                      .where(
+                        (article) => !excludedArticleIds.contains(article.id),
+                      )
+                      .toList();
 
-              // Show notification for new articles
-              _showNewArticleNotification(newArticleObjects.length);
+              if (filteredArticles.isNotEmpty) {
+                // Add the new articles to the beginning since they're newest
+                articles.insertAll(0, filteredArticles);
+                // Sort by created_at
+                articles.sort(
+                  (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                    a.createdAt ?? DateTime.now(),
+                  ),
+                );
+
+                // Show notification for new articles
+                _showNewArticleNotification(filteredArticles.length);
+              }
             }
           });
         }
@@ -266,6 +335,11 @@ class _NewsState extends State<News> {
               final index = articles.indexWhere((a) => a.id == updatedObj.id);
               if (index != -1) {
                 articles[index] = updatedObj;
+
+                // If the article now has update flag set to true, we need to refetch excluded articles
+                if (updatedObj.update) {
+                  _fetchExcludedArticleIds().then((_) => _refreshArticles());
+                }
               }
             }
           });
@@ -314,10 +388,11 @@ class _NewsState extends State<News> {
     });
 
     try {
-      // Call the Supabase service to get articles
+      // Call the Supabase service to get articles, excluding the ones that are updated
       final articlesData = await SupabaseService.getArticles(
         team: selectedTeam.isNotEmpty ? selectedTeam : null,
         archived: showArchived,
+        excludeIds: excludedArticleIds,
       );
 
       // Map the JSON data to Article objects
@@ -336,6 +411,7 @@ class _NewsState extends State<News> {
       setState(() {
         errorMessage = 'Failed to load articles: ${e.toString()}';
       });
+      AppLogger.error('Error fetching articles', e);
       return []; // Return empty list on error
     } finally {
       setState(() {
@@ -352,7 +428,11 @@ class _NewsState extends State<News> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ArticlePage(article: article)),
-    );
+    ).then((_) {
+      // When coming back from article page, we might need to refresh
+      // in case there were updates to any articles
+      _fetchExcludedArticleIds().then((_) => _refreshArticles());
+    });
 
     AppLogger.debug('Navigating to article $id');
   }
