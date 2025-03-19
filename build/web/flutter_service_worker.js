@@ -3,11 +3,11 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"flutter_bootstrap.js": "b96092e2d3e0bac67df1aa8bceea8ee1",
+const RESOURCES = {"flutter_bootstrap.js": "b384faa53ed55528496e82ecd6bf72b2",
 "version.json": "11e1a177d57c5da2bc6e3a6acc3010f4",
 "index.html": "982859e7b42c5a9264df3694f633f887",
 "/": "982859e7b42c5a9264df3694f633f887",
-"main.dart.js": "78fb0931993f0c67d37b82ed288734ac",
+"main.dart.js": "0b3b7173616e4bee89dd86365e68666c",
 "flutter.js": "76f08d47ff9f5715220992f993002504",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
@@ -22,7 +22,7 @@ const RESOURCES = {"flutter_bootstrap.js": "b96092e2d3e0bac67df1aa8bceea8ee1",
 "assets/packages/cupertino_icons/assets/CupertinoIcons.ttf": "33b7d9392238c04c131b6ce224e13711",
 "assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8cb9b6ce",
 "assets/AssetManifest.bin": "08c7bd529e69cb2210b4ef00b608392f",
-"assets/fonts/MaterialIcons-Regular.otf": "c9a2e5183c3ee66b275f3ec6a2d36ce4",
+"assets/fonts/MaterialIcons-Regular.otf": "9349bda93989d369d1e4afd5953a42f6",
 "assets/assets/images/T4LLogo.png": "b98988b829d9359533f701dd4bafbf86",
 "assets/assets/logos/houston_texans.png": "774f66c3e1d37465037c48e678204a87",
 "assets/assets/logos/carolina_panthers.png": "8427c63dc9a70eb45766517dd88ec79a",
