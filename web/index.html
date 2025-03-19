@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="app">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>app</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    // Image proxy handler with multiple fallback options
+    window.imageProxy = {
+      convertToBase64: async function(url) {
+        const proxyUrls = [
+          `https://images.weserv.nl/?url=${encodeURIComponent(url)}`,
+          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+          url // Original URL as last resort
+        ];
+
+        for (const proxyUrl of proxyUrls) {
+          try {
+            const response = await fetch(proxyUrl, {
+              mode: 'cors',
+              headers: {
+                'Accept': 'image/*'
+              }
+            });
+
+            if (!response.ok) {
+              continue; // Try next proxy if this one fails
+            }
+
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn('Proxy attempt failed:', proxyUrl, e);
+            continue; // Try next proxy
+          }
+        }
+        
+        throw new Error('All proxy attempts failed');
+      }
+    };
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
