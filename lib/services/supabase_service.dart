@@ -43,6 +43,7 @@ class SupabaseService {
   static Future<List<Map<String, dynamic>>> getArticles({
     String? team,
     bool archived = false,
+    List<int>? excludeIds, // Add parameter to exclude certain article IDs
   }) async {
     // Start with the base query
     var query = client.from('NewsArticles').select();
@@ -61,11 +62,80 @@ class SupabaseService {
       query = query.gte('created_at', cutoffDate.toIso8601String());
     }
 
+    // Exclude specific article IDs if provided
+    if (excludeIds != null && excludeIds.isNotEmpty) {
+      query = query.not('id', 'inFilter', excludeIds);
+    }
+
     // Apply sorting - use .order() on the existing query
     final results = await query.order('created_at', ascending: false);
 
     // Return the results
     return results;
+  }
+
+  /// Get article vector data for a specific article
+  static Future<Map<String, dynamic>?> getArticleVector(int articleId) async {
+    try {
+      final response = await client
+          .from('ArticleVector')
+          .select()
+          .eq('SourceArticle', articleId)
+          .maybeSingle();
+          
+      return response;
+    } catch (e) {
+      AppLogger.error('Error fetching article vector', e);
+      return null;
+    }
+  }
+
+  /// Get articles being updated by a specific article
+  static Future<List<Map<String, dynamic>>> getUpdatedArticles(int articleId) async {
+    try {
+      // First, get the article vector data
+      final vectorData = await getArticleVector(articleId);
+      
+      if (vectorData == null || vectorData['update'] == null) {
+        return [];
+      }
+      
+      // Parse the updated article IDs
+      List<int> updatedIds = [];
+      if (vectorData['update'] is String) {
+        final String cleanString = vectorData['update']
+            .toString()
+            .replaceAll('[', '')
+            .replaceAll(']', '')
+            .replaceAll(' ', '');
+        updatedIds = cleanString
+            .split(',')
+            .where((s) => s.isNotEmpty)
+            .map((s) => int.tryParse(s) ?? 0)
+            .where((id) => id > 0)
+            .toList();
+      } else if (vectorData['update'] is List) {
+        updatedIds = (vectorData['update'] as List)
+            .map((item) => item is num ? item.toInt() : 0)
+            .where((id) => id > 0)
+            .toList();
+      }
+      
+      if (updatedIds.isEmpty) {
+        return [];
+      }
+      
+      // Fetch the articles with these IDs using inFilter instead of in_
+      final updatedArticles = await client
+          .from('NewsArticles')
+          .select()
+          .inFilter('id', updatedIds);
+          
+      return updatedArticles;
+    } catch (e) {
+      AppLogger.error('Error fetching updated articles', e);
+      return [];
+    }
   }
 
   /// Subscribe to real-time changes in the NewsArticles table

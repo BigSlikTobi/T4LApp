@@ -23,12 +23,34 @@ class _ArticlePageState extends State<ArticlePage> {
   String? _processedImageUrl;
   String? teamCode;
   bool isLoading = true;
+  List<Article> updatedArticles = []; // To store the articles that are updated
 
   @override
   void initState() {
     super.initState();
     _processImageUrls();
     _fetchTeamCode();
+    if (widget.article.update) {
+      _fetchUpdatedArticles();
+    }
+  }
+
+  Future<void> _fetchUpdatedArticles() async {
+    try {
+      final articleVectorData = await SupabaseService.getUpdatedArticles(
+        widget.article.id,
+      );
+      if (mounted) {
+        setState(() {
+          updatedArticles =
+              articleVectorData
+                  .map((article) => Article.fromJson(article))
+                  .toList();
+        });
+      }
+    } catch (e) {
+      AppLogger.error('Error fetching updated articles', e);
+    }
   }
 
   Future<void> _processImageUrls() async {
@@ -280,6 +302,45 @@ class _ArticlePageState extends State<ArticlePage> {
                         ),
                       ),
 
+                      // Show update badge if this is an update to a previous article
+                      if (widget.article.update)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.update,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  isEnglish
+                                      ? 'UPDATED STORY'
+                                      : 'AKTUALISIERTE GESCHICHTE',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                       // Date and source
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -413,6 +474,89 @@ class _ArticlePageState extends State<ArticlePage> {
                           },
                         ),
                       ),
+
+                      // Display updated articles section if applicable
+                      if (updatedArticles.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 32.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Divider(thickness: 1),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0,
+                                ),
+                                child: Text(
+                                  isEnglish
+                                      ? 'UPDATES PREVIOUS STORIES'
+                                      : 'AKTUALISIERT FRÜHERE GESCHICHTEN',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              ...updatedArticles.map((article) {
+                                return Card(
+                                  margin: EdgeInsets.only(bottom: 12.0),
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  ArticlePage(article: article),
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isEnglish
+                                                ? article.englishHeadline
+                                                : article.germanHeadline,
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          if (article.createdAt != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 8.0,
+                                              ),
+                                              child: Text(
+                                                DateFormat(
+                                                  'MMM d, yyyy',
+                                                ).format(article.createdAt!),
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color:
+                                                          theme
+                                                              .colorScheme
+                                                              .secondary,
+                                                    ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

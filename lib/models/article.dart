@@ -11,6 +11,7 @@ class Article {
   final String? sourceAuthor;
   final String? team;
   final String? status;
+  final bool update; // Added update field
 
   Article({
     required this.id,
@@ -25,6 +26,7 @@ class Article {
     this.sourceAuthor,
     this.team,
     this.status,
+    this.update = false, // Default to false
   });
 
   // Factory constructor to create an Article from a Map (JSON)
@@ -65,6 +67,7 @@ class Article {
       sourceAuthor: json['SourceArticle']?.toString(),
       team: json['team']?.toString(),
       status: null, // Status doesn't seem to be in the schema
+      update: json['update'] == true, // Parse the update flag
     );
   }
 
@@ -82,6 +85,7 @@ class Article {
       'created_at': createdAt?.toIso8601String(),
       'SourceArticle': sourceAuthor,
       'team': team,
+      'update': update,
     };
   }
 }
