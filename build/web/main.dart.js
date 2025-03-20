@@ -7875,7 +7875,7 @@ s=null
 if(c.i(a,d)!=null)try{s=A.yp(J.bm(c.i(a,d)))}catch(p){s=null}o=q.$1(c.i(a,"headlineEnglish"))
 n=q.$1(c.i(a,"headlineGerman"))
 m=q.$1(c.i(a,"ContentEnglish"))
-q=q.$1(c.i(a,"ConetentGerman"))
+q=q.$1(c.i(a,"ContentGerman"))
 l=c.i(a,"Image1")
 l=l==null?f:J.bm(l)
 k=c.i(a,"Image2")
@@ -42312,7 +42312,7 @@ O(a){return A.azk(null,A.Cd(!0,this.d[0],B.ay,!0),new A.B0(null))}}
 A.e8.prototype={
 fY(){var s=this,r=s.x
 r=r==null?null:r.Aj()
-return A.O(["id",s.a,"headlineEnglish",s.b,"headlineGerman",s.c,"ContentEnglish",s.d,"ConetentGerman",s.e,"Image1",s.f,"Image2",s.r,"Image3",s.w,"created_at",r,"SourceArticle",s.y,"team",s.z,"update",s.as],t.N,t.z)}}
+return A.O(["id",s.a,"headlineEnglish",s.b,"headlineGerman",s.c,"ContentEnglish",s.d,"ContentGerman",s.e,"Image1",s.f,"Image2",s.r,"Image3",s.w,"created_at",r,"SourceArticle",s.y,"team",s.z,"update",s.as],t.N,t.z)}}
 A.a_L.prototype={
 $1(a){var s=a==null?null:J.bm(a)
 return s==null?"":s},
