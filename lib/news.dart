@@ -222,13 +222,13 @@ class _NewsState extends State<News> {
       final articleVectors = await SupabaseService.client
           .from('ArticleVector')
           .select()
-          .not('update', 'is', null);
+          .not('isUpdate', 'is', null);
 
       // Extract all the article IDs that are being updated
       List<int> excludedIds = [];
       for (var vector in articleVectors) {
         // Parse the update array from various possible formats
-        var updateField = vector['update'];
+        var updateField = vector['isUpdate'];
         if (updateField is String) {
           try {
             final String cleanString = updateField
@@ -337,7 +337,7 @@ class _NewsState extends State<News> {
                 articles[index] = updatedObj;
 
                 // If the article now has update flag set to true, we need to refetch excluded articles
-                if (updatedObj.update) {
+                if (updatedObj.isUpdate) {
                   _fetchExcludedArticleIds().then((_) => _refreshArticles());
                 }
               }

@@ -11,7 +11,7 @@ class Article {
   final String? sourceAuthor;
   final String? team;
   final String? status;
-  final bool update; // Added update field
+  final bool isUpdate; // Changed field name to isUpdate
 
   Article({
     required this.id,
@@ -26,7 +26,7 @@ class Article {
     this.sourceAuthor,
     this.team,
     this.status,
-    this.update = false, // Default to false
+    this.isUpdate = false, // Updated parameter name
   });
 
   // Factory constructor to create an Article from a Map (JSON)
@@ -67,7 +67,7 @@ class Article {
       sourceAuthor: json['SourceArticle']?.toString(),
       team: json['team']?.toString(),
       status: null, // Status doesn't seem to be in the schema
-      update: json['update'] == true, // Parse the update flag
+      isUpdate: json['isUpdate'] == true, // Updated to use isUpdate field
     );
   }
 
@@ -85,7 +85,7 @@ class Article {
       'created_at': createdAt?.toIso8601String(),
       'SourceArticle': sourceAuthor,
       'team': team,
-      'update': update,
+      'isUpdate': isUpdate, // Updated field name in JSON
     };
   }
 }

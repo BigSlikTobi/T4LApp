@@ -30,7 +30,7 @@ class _ArticlePageState extends State<ArticlePage> {
     super.initState();
     _processImageUrls();
     _fetchTeamCode();
-    if (widget.article.update) {
+    if (widget.article.isUpdate) {
       _fetchUpdatedArticles();
     }
   }
@@ -303,7 +303,7 @@ class _ArticlePageState extends State<ArticlePage> {
                       ),
 
                       // Show update badge if this is an update to a previous article
-                      if (widget.article.update)
+                      if (widget.article.isUpdate)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Container(

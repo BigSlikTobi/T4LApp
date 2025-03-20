@@ -269,7 +269,7 @@ class _NewsCardState extends State<NewsCard> {
                             widget.article.status!,
                           ),
                         ),
-                      if (widget.article.update)
+                      if (widget.article.isUpdate)
                         Positioned(
                           top:
                               widget.article.status != null &&
