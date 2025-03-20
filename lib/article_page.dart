@@ -553,7 +553,7 @@ class _ArticlePageState extends State<ArticlePage> {
                                     ),
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                         ),

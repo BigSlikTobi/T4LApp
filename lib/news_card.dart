@@ -164,8 +164,6 @@ class _NewsCardState extends State<NewsCard> {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isEnglish =
         languageProvider.currentLanguage == LanguageProvider.english;
-
-    // Select content based on current language
     final headline =
         isEnglish
             ? widget.article.englishHeadline
@@ -173,12 +171,6 @@ class _NewsCardState extends State<NewsCard> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double imageHeight =
-            widget.variant == 'horizontal'
-                ? constraints.maxWidth *
-                    0.3 // 30% for horizontal
-                : constraints.maxWidth * 0.6; // Increased to 60%
-
         return GestureDetector(
           onTap: () => widget.onArticleClick(widget.article.id),
           child: Card(
@@ -192,169 +184,168 @@ class _NewsCardState extends State<NewsCard> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Stack(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: imageHeight,
-                      child:
-                          widget.article.imageUrl != null &&
-                                  widget.article.imageUrl!.isNotEmpty
-                              ? Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  _processedImageUrl != null &&
-                                          _processedImageUrl!.startsWith(
-                                            'data:image',
-                                          )
-                                      ? Image.memory(
-                                        base64Decode(
-                                          _processedImageUrl!.split(',')[1],
+                AspectRatio(
+                  aspectRatio: widget.variant == 'horizontal' ? 16 / 9 : 4 / 3,
+                  child: Stack(
+                    children: [
+                      SizedBox.expand(
+                        child:
+                            widget.article.imageUrl != null &&
+                                    widget.article.imageUrl!.isNotEmpty
+                                ? Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    _processedImageUrl != null &&
+                                            _processedImageUrl!.startsWith(
+                                              'data:image',
+                                            )
+                                        ? Image.memory(
+                                          base64Decode(
+                                            _processedImageUrl!.split(',')[1],
+                                          ),
+                                          fit: BoxFit.cover,
+                                          alignment: Alignment.topCenter,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  _buildFallbackImage(theme),
+                                        )
+                                        : CachedNetworkImage(
+                                          imageUrl:
+                                              _processedImageUrl ??
+                                              widget.article.imageUrl!,
+                                          fit: BoxFit.cover,
+                                          alignment: Alignment.topCenter,
+                                          placeholder:
+                                              (context, url) =>
+                                                  _buildLoadingPlaceholder(
+                                                    theme,
+                                                  ),
+                                          errorWidget:
+                                              (context, url, error) =>
+                                                  _buildFallbackImage(theme),
                                         ),
-                                        fit: BoxFit.cover,
-                                        alignment: Alignment.topCenter,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                _buildFallbackImage(theme),
-                                      )
-                                      : CachedNetworkImage(
-                                        imageUrl:
-                                            _processedImageUrl ??
-                                            widget.article.imageUrl!,
-                                        fit: BoxFit.cover,
-                                        alignment: Alignment.topCenter,
-                                        placeholder:
-                                            (context, url) =>
-                                                _buildLoadingPlaceholder(theme),
-                                        errorWidget:
-                                            (context, url, error) =>
-                                                _buildFallbackImage(theme),
-                                      ),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.7),
-                                        ],
-                                        stops: const [0.6, 1.0],
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withOpacity(0.7),
+                                          ],
+                                          stops: const [0.6, 1.0],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              )
-                              : _buildFallbackImage(theme),
-                    ),
-
-                    // Show team icon in top-left corner
-                    if (teamCode != null && !isLoading)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Card(
-                          color: Colors.white,
-                          elevation: 2,
-                          shape: CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Image.asset(
-                              'assets/logos/${_getTeamLogo(teamCode!)}',
-                              height: 24,
-                              width: 24,
+                                  ],
+                                )
+                                : _buildFallbackImage(theme),
+                      ),
+                      if (teamCode != null && !isLoading)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Card(
+                            color: Colors.white,
+                            elevation: 2,
+                            shape: CircleBorder(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Image.asset(
+                                'assets/logos/${_getTeamLogo(teamCode!)}',
+                                height: 24,
+                                width: 24,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-
-                    // Status badges (top right)
-                    if (widget.article.status != null &&
-                        widget.article.status!.isNotEmpty)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: _buildStatusBadge(
-                          context,
-                          widget.article.status!,
+                      if (widget.article.status != null &&
+                          widget.article.status!.isNotEmpty)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _buildStatusBadge(
+                            context,
+                            widget.article.status!,
+                          ),
                         ),
-                      ),
-
-                    // Update indicator (if article is an update)
-                    if (widget.article.update)
-                      Positioned(
-                        top:
-                            widget.article.status != null &&
-                                    widget.article.status!.isNotEmpty
-                                ? 36
-                                : 8,
-                        right: 8,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.update, color: Colors.white, size: 12),
-                              SizedBox(width: 4),
-                              Text(
-                                isEnglish ? 'UPDATE' : 'AKTUELL',
-                                style: TextStyle(
+                      if (widget.article.update)
+                        Positioned(
+                          top:
+                              widget.article.status != null &&
+                                      widget.article.status!.isNotEmpty
+                                  ? 36
+                                  : 8,
+                          right: 8,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.update,
                                   color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
+                                  size: 12,
                                 ),
+                                SizedBox(width: 4),
+                                Text(
+                                  isEnglish ? 'UPDATE' : 'AKTUELL',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Text(
+                          widget.article.createdAt != null
+                              ? DateFormat(
+                                'MMM d, yyyy',
+                              ).format(widget.article.createdAt!)
+                              : '',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                offset: Offset(1, 1),
+                                blurRadius: 2,
                               ),
                             ],
                           ),
                         ),
                       ),
-
-                    // Date at bottom right over the image gradient
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Text(
-                        widget.article.createdAt != null
-                            ? DateFormat(
-                              'MMM d, yyyy',
-                            ).format(widget.article.createdAt!)
-                            : '',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.5),
-                              offset: Offset(1, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headline,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.variant == 'horizontal' ? 14 : null,
-                        ),
-                        maxLines: widget.variant == 'horizontal' ? 2 : 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  padding: const EdgeInsets.only(
+                    left: 12.0,
+                    right: 12.0,
+                    top: 12.0,
+                  ),
+                  child: Text(
+                    headline,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: widget.variant == 'horizontal' ? 14 : null,
+                    ),
+                    maxLines: null, // Remove maxLines constraint
+                    overflow:
+                        TextOverflow.visible, // Allow text to wrap naturally
                   ),
                 ),
               ],
