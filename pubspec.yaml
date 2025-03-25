@@ -11,13 +11,14 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   intl: ^0.17.0
-  supabase_flutter: ^2.3.2
   cached_network_image: ^3.3.0
   js: ^0.6.7
   logging: ^1.2.0
   shared_preferences: ^2.2.2
   provider: ^6.1.1
   flutter_html: ^3.0.0-beta.2
+  http: ^1.2.0
+  supabase_flutter: ^2.8.4
 
 dev_dependencies:
   flutter_test:

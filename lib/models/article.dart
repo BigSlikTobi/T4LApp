@@ -1,3 +1,5 @@
+import 'package:app/utils/logger.dart';
+
 class Article {
   final int id;
   final String englishHeadline;
@@ -5,13 +7,10 @@ class Article {
   final String englishArticle;
   final String germanArticle;
   final String? imageUrl;
-  final String? imageUrl2;
-  final String? imageUrl3;
   final DateTime? createdAt;
   final String? sourceAuthor;
   final String? team;
   final String? status;
-  final bool isUpdate; // Changed field name to isUpdate
 
   Article({
     required this.id,
@@ -20,72 +19,54 @@ class Article {
     required this.englishArticle,
     required this.germanArticle,
     this.imageUrl,
-    this.imageUrl2,
-    this.imageUrl3,
     this.createdAt,
     this.sourceAuthor,
     this.team,
     this.status,
-    this.isUpdate = false, // Updated parameter name
   });
 
-  // Factory constructor to create an Article from a Map (JSON)
   factory Article.fromJson(Map<String, dynamic> json) {
-    // Handle ID - can be int or String
-    int articleId;
-    if (json['id'] is int) {
-      articleId = json['id'];
-    } else if (json['id'] is String) {
-      articleId = int.tryParse(json['id']) ?? 0;
-    } else {
-      articleId = 0; // Default ID if missing or invalid
-    }
-
-    // Safely handle all String fields
-    String safeString(dynamic value) => value?.toString() ?? '';
-
-    // Handle DateTime
+    int articleId = json['id'] is int ? json['id'] : (int.tryParse(json['id'].toString()) ?? 0);
+    
     DateTime? dateTime;
-    if (json['created_at'] != null) {
+    String? rawDate = json['createdAt']?.toString();
+    AppLogger.debug('Article $articleId - Raw date value: $rawDate');
+    
+    if (rawDate != null) {
       try {
-        dateTime = DateTime.parse(json['created_at'].toString());
+        dateTime = DateTime.parse(rawDate);
+        AppLogger.debug('Successfully parsed date for article $articleId: $dateTime');
       } catch (e) {
-        dateTime = null;
+        AppLogger.error('Error parsing date for article $articleId', e);
       }
     }
 
     return Article(
       id: articleId,
-      englishHeadline: safeString(json['headlineEnglish']),
-      germanHeadline: safeString(json['headlineGerman']),
-      englishArticle: safeString(json['ContentEnglish']),
-      germanArticle: safeString(json['ContentGerman']),
+      englishHeadline: json['englishHeadline']?.toString() ?? '',
+      germanHeadline: json['germanHeadline']?.toString() ?? '',
+      englishArticle: json['ContentEnglish']?.toString() ?? '',
+      germanArticle: json['ContentGerman']?.toString() ?? '',
       imageUrl: json['Image1']?.toString(),
-      imageUrl2: json['Image2']?.toString(),
-      imageUrl3: json['Image3']?.toString(),
       createdAt: dateTime,
-      sourceAuthor: json['SourceArticle']?.toString(),
-      team: json['team']?.toString(),
-      status: null, // Status doesn't seem to be in the schema
-      isUpdate: json['isUpdate'] == true, // Updated to use isUpdate field
+      sourceAuthor: json['SourceName']?.toString(),
+      team: json['teamId']?.toString(),
+      status: json['status']?.toString(),
     );
   }
 
-  // Convert Article to a Map (JSON)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'headlineEnglish': englishHeadline,
-      'headlineGerman': germanHeadline,
+      'englishHeadline': englishHeadline,
+      'germanHeadline': germanHeadline,
       'ContentEnglish': englishArticle,
       'ContentGerman': germanArticle,
       'Image1': imageUrl,
-      'Image2': imageUrl2,
-      'Image3': imageUrl3,
-      'created_at': createdAt?.toIso8601String(),
-      'SourceArticle': sourceAuthor,
-      'team': team,
-      'isUpdate': isUpdate, // Updated field name in JSON
+      'createdAt': createdAt?.toIso8601String(),
+      'SourceName': sourceAuthor,
+      'teamId': team,
+      'status': status,
     };
   }
 }
