@@ -34,7 +34,7 @@ class Article {
 
     // Check multiple possible ID field names
     final possibleIdFields = ['id', 'articleId', 'article_id', 'ID'];
-    var rawId = null;
+    var rawId;
     var usedField = '';
 
     // Try each possible ID field
