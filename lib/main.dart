@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:app/services/supabase_service.dart';
-import 'package:app/config.dart';
 import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:app/config.dart';
 import 'navbar.dart';
 import 'news.dart';
 
@@ -14,16 +14,14 @@ void main() async {
   AppLogger.initialize();
 
   // Initialize Supabase
-  await SupabaseService.initialize(
-    url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
+  await Supabase.initialize(
+    url: 'https://yqtiuzhedkfacwgormhn.supabase.co',
+    anonKey: AppConfig.apiKey,
   );
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => LanguageProvider())],
       child: MyApp(),
     ),
   );

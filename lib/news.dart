@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:app/models/article.dart';
 import 'package:app/services/supabase_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'news_card.dart';
 import 'article_page.dart';
 
@@ -189,13 +189,10 @@ class News extends StatefulWidget {
 }
 
 class _NewsState extends State<News> {
-  String selectedTeam =
-      ""; // Now stores team code (e.g., "ARI") or empty for no filter
+  String selectedTeam = "";
   bool showArchived = false;
-  late Future<List<Article>> articlesFuture;
+  Future<List<Article>>? articlesFuture;
   List<Article> articles = [];
-  // Track articles to be excluded (articles that are already updated by newer articles)
-  List<int> excludedArticleIds = [];
   bool isLoading = false;
   String? errorMessage;
   RealtimeChannel? _subscription;
@@ -203,196 +200,57 @@ class _NewsState extends State<News> {
   @override
   void initState() {
     super.initState();
-    _fetchExcludedArticleIds().then((_) {
-      articlesFuture = _fetchArticlesFromSupabase();
-      _setupRealtimeSubscription();
-    });
+    articlesFuture = _fetchArticles();
+    _setupRealtimeSubscription();
   }
 
   @override
   void dispose() {
     _subscription?.unsubscribe();
+    _subscription = null;
+    SupabaseService.dispose();
     super.dispose();
   }
 
-  // Fetch articles IDs that are already updated by other articles
-  Future<void> _fetchExcludedArticleIds() async {
-    try {
-      // Get all article vectors that have updates
-      final articleVectors = await SupabaseService.client
-          .from('ArticleVector')
-          .select()
-          .not('isUpdate', 'is', null);
-
-      // Extract all the article IDs that are being updated
-      List<int> excludedIds = [];
-      for (var vector in articleVectors) {
-        // Parse the update array from various possible formats
-        var updateField = vector['isUpdate'];
-        if (updateField is String) {
-          try {
-            final String cleanString = updateField
-                .replaceAll('[', '')
-                .replaceAll(']', '')
-                .replaceAll(' ', '');
-
-            final List<int> updateIds =
-                cleanString
-                    .split(',')
-                    .where((s) => s.isNotEmpty)
-                    .map((s) => int.tryParse(s) ?? 0)
-                    .where((id) => id > 0)
-                    .toList();
-
-            excludedIds.addAll(updateIds);
-          } catch (e) {
-            AppLogger.error('Error parsing update array', e);
-          }
-        } else if (updateField is List) {
-          final List<int> updateIds =
-              updateField
-                  .map((item) => item is num ? item.toInt() : 0)
-                  .where((id) => id > 0)
-                  .toList();
-
-          excludedIds.addAll(updateIds);
-        }
-      }
-
-      // Update state with excluded article IDs
-      if (mounted) {
-        setState(() {
-          excludedArticleIds = excludedIds;
-        });
-      }
-    } catch (e) {
-      AppLogger.error('Error fetching excluded article IDs', e);
-    }
-  }
-
-  // Update setupRealtimeSubscription to handle team codes
-  void _setupRealtimeSubscription() async {
+  void _setupRealtimeSubscription() {
+    // Clean up existing subscription
     _subscription?.unsubscribe();
+    _subscription = null;
 
-    _subscription = await SupabaseService.subscribeToArticles(
+    // Create new subscription
+    _subscription = SupabaseService.subscribeToArticles(
       team: selectedTeam.isNotEmpty ? selectedTeam : null,
-      onInsert: (newArticles, _) {
-        // Handle new articles being added
+      archived: showArchived,
+      onArticlesUpdate: (articles) {
         if (mounted) {
           setState(() {
-            // Convert new articles to Article objects
-            final newArticleObjects =
-                newArticles
+            this.articles =
+                articles
                     .map((articleJson) => Article.fromJson(articleJson))
                     .toList();
-
-            // Only add to the list if we're showing current articles
-            // or if we're showing archived as well
-            bool shouldAddArticle = true;
-            if (!showArchived) {
-              final cutoffDate = DateTime.now().subtract(
-                const Duration(days: 30),
-              );
-              shouldAddArticle = newArticleObjects.every(
-                (article) =>
-                    article.createdAt != null &&
-                    article.createdAt!.isAfter(cutoffDate),
-              );
-            }
-
-            if (shouldAddArticle) {
-              // Filter out articles that are in the excluded list
-              final filteredArticles =
-                  newArticleObjects
-                      .where(
-                        (article) => !excludedArticleIds.contains(article.id),
-                      )
-                      .toList();
-
-              if (filteredArticles.isNotEmpty) {
-                // Add the new articles to the beginning since they're newest
-                articles.insertAll(0, filteredArticles);
-                // Sort by created_at
-                articles.sort(
-                  (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                    a.createdAt ?? DateTime.now(),
-                  ),
-                );
-
-                // Show notification for new articles
-                _showNewArticleNotification(filteredArticles.length);
-              }
-            }
-          });
-        }
-      },
-      onUpdate: (updatedArticles, _) {
-        // Handle articles being updated
-        if (mounted) {
-          setState(() {
-            for (var updatedArticle in updatedArticles) {
-              final updatedObj = Article.fromJson(updatedArticle);
-              final index = articles.indexWhere((a) => a.id == updatedObj.id);
-              if (index != -1) {
-                articles[index] = updatedObj;
-
-                // If the article now has update flag set to true, we need to refetch excluded articles
-                if (updatedObj.isUpdate) {
-                  _fetchExcludedArticleIds().then((_) => _refreshArticles());
-                }
-              }
-            }
-          });
-        }
-      },
-      onDelete: (deletedArticles, _) {
-        // Handle articles being deleted
-        if (mounted) {
-          setState(() {
-            for (var deletedArticle in deletedArticles) {
-              final deletedId = deletedArticle['id'];
-              articles.removeWhere((a) => a.id == deletedId);
-            }
+            // Sort by date
+            this.articles.sort(
+              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                a.createdAt ?? DateTime.now(),
+              ),
+            );
           });
         }
       },
     );
   }
 
-  void _showNewArticleNotification(int count) {
-    // Show a snackbar notification when new articles arrive
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          '$count new ${count == 1 ? 'article' : 'articles'} available!',
-        ),
-        action: SnackBarAction(
-          label: 'View',
-          onPressed: () {
-            // Scroll to top to show the new articles
-            // Implementation depends on your scroll controller setup
-          },
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(8),
-        duration: Duration(seconds: 5),
-      ),
-    );
-  }
-
-  Future<List<Article>> _fetchArticlesFromSupabase() async {
+  Future<List<Article>> _fetchArticles() async {
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
 
     try {
-      // Call the Supabase service to get articles, excluding the ones that are updated
+      // Get articles from edge function
       final articlesData = await SupabaseService.getArticles(
         team: selectedTeam.isNotEmpty ? selectedTeam : null,
         archived: showArchived,
-        excludeIds: excludedArticleIds,
       );
 
       // Map the JSON data to Article objects
@@ -401,7 +259,14 @@ class _NewsState extends State<News> {
               .map((articleJson) => Article.fromJson(articleJson))
               .toList();
 
-      // Update the articles list for realtime changes
+      // Sort by date
+      fetchedArticles.sort(
+        (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+          a.createdAt ?? DateTime.now(),
+        ),
+      );
+
+      // Update the articles list
       setState(() {
         articles = fetchedArticles;
       });
@@ -411,8 +276,8 @@ class _NewsState extends State<News> {
       setState(() {
         errorMessage = 'Failed to load articles: ${e.toString()}';
       });
-      AppLogger.error('Error fetching articles', e);
-      return []; // Return empty list on error
+      AppLogger.error('Error fetching articles from edge function', e);
+      return [];
     } finally {
       setState(() {
         isLoading = false;
@@ -421,29 +286,22 @@ class _NewsState extends State<News> {
   }
 
   void _onArticleClick(int id) {
-    // Find the article with the given ID
     final article = articles.firstWhere((article) => article.id == id);
-
-    // Navigate to the article page
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ArticlePage(article: article)),
     ).then((_) {
-      // When coming back from article page, we might need to refresh
-      // in case there were updates to any articles
-      _fetchExcludedArticleIds().then((_) => _refreshArticles());
+      _refreshArticles();
     });
-
     AppLogger.debug('Navigating to article $id');
   }
 
-  // Refresh articles whenever state changes (team filter or archived toggle).
   void _refreshArticles() {
     setState(() {
-      articlesFuture = _fetchArticlesFromSupabase();
+      articlesFuture = _fetchArticles();
     });
 
-    // Update the realtime subscription with new filter
+    // Re-setup realtime subscription with current filters
     _setupRealtimeSubscription();
   }
 
@@ -616,7 +474,7 @@ class _NewsState extends State<News> {
           ),
           Expanded(
             child: FutureBuilder<List<Article>>(
-              future: articlesFuture,
+              future: articlesFuture ?? Future.value([]),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting ||
                     isLoading) {
