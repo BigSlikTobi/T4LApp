@@ -9,7 +9,7 @@ class Article {
   final String? imageUrl;
   final DateTime? createdAt;
   final String? sourceAuthor;
-  final String? team;
+  final String? teamId; // Changed from team to teamId to match database
   final String? status;
 
   Article({
@@ -21,25 +21,32 @@ class Article {
     this.imageUrl,
     this.createdAt,
     this.sourceAuthor,
-    this.team,
+    this.teamId, // Changed from team to teamId
     this.status,
   });
 
   factory Article.fromJson(Map<String, dynamic> json) {
-    int articleId = json['id'] is int ? json['id'] : (int.tryParse(json['id'].toString()) ?? 0);
-    
+    int articleId =
+        json['id'] is int
+            ? json['id']
+            : (int.tryParse(json['id'].toString()) ?? 0);
+
     DateTime? dateTime;
-    String? rawDate = json['createdAt']?.toString();
+    String? rawDate =
+        json['created_at']?.toString() ?? json['createdAt']?.toString();
     AppLogger.debug('Article $articleId - Raw date value: $rawDate');
-    
+
     if (rawDate != null) {
       try {
         dateTime = DateTime.parse(rawDate);
-        AppLogger.debug('Successfully parsed date for article $articleId: $dateTime');
       } catch (e) {
         AppLogger.error('Error parsing date for article $articleId', e);
       }
     }
+
+    // Ensure we get the teamId value and log it
+    String? teamIdValue = json['teamId']?.toString();
+    AppLogger.debug('Article $articleId - TeamId from JSON: $teamIdValue');
 
     return Article(
       id: articleId,
@@ -50,7 +57,8 @@ class Article {
       imageUrl: json['Image1']?.toString(),
       createdAt: dateTime,
       sourceAuthor: json['SourceName']?.toString(),
-      team: json['teamId']?.toString(),
+      teamId:
+          teamIdValue, // Don't force uppercase here since we handle it in the service
       status: json['status']?.toString(),
     );
   }
@@ -63,9 +71,9 @@ class Article {
       'ContentEnglish': englishArticle,
       'ContentGerman': germanArticle,
       'Image1': imageUrl,
-      'createdAt': createdAt?.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
       'SourceName': sourceAuthor,
-      'teamId': team,
+      'teamId': teamId,
       'status': status,
     };
   }

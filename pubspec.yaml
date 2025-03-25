@@ -29,4 +29,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/T4LLogo.png
+    - assets/images/placeholder.jpeg
     - assets/logos/
