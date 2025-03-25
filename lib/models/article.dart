@@ -12,6 +12,9 @@ class Article {
   final String? teamId; // Changed from team to teamId to match database
   final String? status;
 
+  // Static counter for generating unique IDs
+  static int _tempIdCounter = 0;
+
   Article({
     required this.id,
     required this.englishHeadline,
@@ -26,10 +29,73 @@ class Article {
   });
 
   factory Article.fromJson(Map<String, dynamic> json) {
-    int articleId =
-        json['id'] is int
-            ? json['id']
-            : (int.tryParse(json['id'].toString()) ?? 0);
+    // Enhanced logging of the full article JSON for debugging
+    AppLogger.debug('Processing article JSON: ${json.toString()}');
+
+    // Check multiple possible ID field names
+    final possibleIdFields = ['id', 'articleId', 'article_id', 'ID'];
+    var rawId = null;
+    var usedField = '';
+
+    // Try each possible ID field
+    for (var field in possibleIdFields) {
+      if (json.containsKey(field) && json[field] != null) {
+        rawId = json[field];
+        usedField = field;
+        break;
+      }
+    }
+
+    AppLogger.debug(
+      'Raw article ID from JSON: $rawId (type: ${rawId?.runtimeType}, field: $usedField)',
+    );
+
+    int articleId;
+    if (rawId == null) {
+      // If no valid ID field found, generate a unique temporary ID
+      // Use current timestamp + counter to ensure uniqueness
+      final tempId = DateTime.now().millisecondsSinceEpoch + (_tempIdCounter++);
+      AppLogger.error(
+        'No valid ID found in article JSON. Using temporary ID: $tempId\n'
+        'Available fields: ${json.keys.join(', ')}',
+      );
+      articleId = tempId;
+    } else if (rawId is int) {
+      articleId = rawId;
+      AppLogger.debug('Using integer ID: $articleId');
+    } else if (rawId is String) {
+      if (rawId.contains('-')) {
+        // UUID format - take last segment and parse as int if possible
+        final lastPart = rawId.split('-').last;
+        var parsedId = int.tryParse(lastPart);
+        if (parsedId != null) {
+          articleId = parsedId;
+          AppLogger.debug(
+            'Parsed UUID last segment as ID: $articleId from $rawId',
+          );
+        } else {
+          articleId = rawId.hashCode;
+          AppLogger.debug('Using hash of UUID as ID: $articleId from $rawId');
+        }
+      } else {
+        // Try parsing numeric string
+        var parsedId = int.tryParse(rawId);
+        if (parsedId != null) {
+          articleId = parsedId;
+          AppLogger.debug('Parsed numeric ID from string: $articleId');
+        } else {
+          // If parsing fails, use hash of the string
+          articleId = rawId.hashCode;
+          AppLogger.debug('Using hash of string ID: $articleId from $rawId');
+        }
+      }
+    } else {
+      // For any other type, use toString() and hash + counter to ensure uniqueness
+      articleId = rawId.toString().hashCode + (_tempIdCounter++);
+      AppLogger.debug(
+        'Using unique hash of non-string ID: $articleId from $rawId (type: ${rawId.runtimeType})',
+      );
+    }
 
     DateTime? dateTime;
     String? rawDate =

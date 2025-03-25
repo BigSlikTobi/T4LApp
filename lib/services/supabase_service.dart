@@ -98,7 +98,6 @@ class SupabaseService {
           AppLogger.debug('Fetching articles with teamId: $team');
 
           final queryParams = <String, String>{'archived': archived.toString()};
-
           if (team?.isNotEmpty == true) {
             final normalizedTeamId = team!.toUpperCase();
             queryParams['teamId'] = normalizedTeamId;
@@ -126,8 +125,14 @@ class SupabaseService {
               .timeout(const Duration(seconds: 10));
 
           if (response.statusCode == 200) {
+            AppLogger.debug('Raw API response: ${response.body}');
             final List<dynamic> jsonData = jsonDecode(response.body);
             AppLogger.debug('Received ${jsonData.length} articles from API');
+
+            // Log first article as sample
+            if (jsonData.isNotEmpty) {
+              AppLogger.debug('Sample article data: ${jsonData[0]}');
+            }
 
             // Validate teamId filter is working
             if (team?.isNotEmpty == true) {

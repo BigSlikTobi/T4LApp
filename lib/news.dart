@@ -303,7 +303,11 @@ class _NewsState extends State<News> {
   }
 
   void _onArticleClick(int id) {
-    final article = articles.firstWhere((article) => article.id == id);
+    AppLogger.debug('Navigating to article with ID: $id');
+    final article = articles.firstWhere((article) {
+      AppLogger.debug('Checking article ID: ${article.id}');
+      return article.id == id;
+    });
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ArticlePage(article: article)),
