@@ -7,6 +7,7 @@ import 'package:app/providers/language_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'modern_news_card.dart';
 import 'article_page.dart';
+import 'slideshow_card.dart'; // Import the new slideshow card
 
 // Simulated Team info (as in your teamMapping)
 class TeamInfo {
@@ -575,6 +576,9 @@ class _NewsState extends State<News> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Add the slideshow card at the top with top articles
+                        QuickNewsSlideShow(articles: articles.take(5).toList()),
+
                         // Grid view for displaying articles.
                         Padding(
                           padding: const EdgeInsets.all(8.0),
