@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:app/models/article.dart';
 import 'package:app/utils/image_utils.dart';
 import 'package:app/utils/logger.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'dart:convert';
 import 'package:intl/intl.dart';
 
 class ArticlePage extends StatefulWidget {
@@ -135,27 +133,26 @@ class _ArticlePageState extends State<ArticlePage> {
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child:
-                          _processedImageUrl!.startsWith('data:image')
-                              ? Image.memory(
-                                base64Decode(_processedImageUrl!.split(',')[1]),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                errorBuilder:
-                                    (context, error, stackTrace) =>
-                                        _buildFallbackImage(theme),
-                              )
-                              : CachedNetworkImage(
-                                imageUrl: _processedImageUrl!,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                placeholder:
-                                    (context, url) =>
-                                        _buildLoadingPlaceholder(theme),
-                                errorWidget:
-                                    (context, url, error) =>
-                                        _buildFallbackImage(theme),
-                              ),
+                      child: Image.network(
+                        _processedImageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          AppLogger.error(
+                            'Error loading article image: ${widget.article.imageUrl}',
+                            error,
+                          );
+                          return Image.asset(
+                            'assets/images/placeholder.jpeg',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return _buildLoadingPlaceholder(theme);
+                        },
+                      ),
                     ),
                   ),
 

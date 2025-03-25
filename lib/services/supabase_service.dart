@@ -18,38 +18,67 @@ class SupabaseService {
     bool archived = false,
     Function(List<Map<String, dynamic>>)? onArticlesUpdate,
   }) {
-    // Unsubscribe from any existing subscription
+    // Clean up existing subscription
     _articleSubscription?.unsubscribe();
 
-    // Create a new subscription
+    final channelName =
+        'public:NewsArticles:${DateTime.now().millisecondsSinceEpoch}';
+    AppLogger.debug('Creating new subscription on channel: $channelName');
+
     final channel = supabase
-        .channel('public:NewsArticles')
+        .channel(channelName)
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'NewsArticles',
           filter:
-              team != null
+              team?.isNotEmpty == true
                   ? PostgresChangeFilter(
                     type: PostgresChangeFilterType.eq,
-                    column: 'team',
-                    value: team,
+                    column: 'teamId',
+                    value: team!.toUpperCase(),
                   )
                   : null,
           callback: (payload) {
-            AppLogger.debug('Realtime update received: $payload');
+            AppLogger.debug(
+              'Realtime update received: ${payload.eventType} on ${payload.table}',
+            );
             if (onArticlesUpdate != null) {
-              // Fetch fresh data when a change occurs
-              getArticles(
-                team: team,
-                archived: archived,
-              ).then(onArticlesUpdate);
+              getArticles(team: team, archived: archived)
+                  .then((articles) {
+                    AppLogger.debug(
+                      'Fetched ${articles.length} articles after realtime update',
+                    );
+                    onArticlesUpdate(articles);
+                  })
+                  .catchError((error) {
+                    AppLogger.error(
+                      'Error fetching articles after realtime update',
+                      error,
+                    );
+                  });
             }
           },
         );
 
-    // Subscribe to the channel
-    channel.subscribe();
+    // Subscribe with robust error handling and auto-reconnect
+    channel.subscribe((status, [error]) {
+      AppLogger.debug('Channel $channelName status: $status');
+      if (error != null) {
+        AppLogger.error('Subscription error on $channelName', error);
+        // Attempt to reconnect on error
+        Future.delayed(Duration(seconds: 5), () {
+          if (_articleSubscription == channel) {
+            AppLogger.debug('Attempting to reconnect channel: $channelName');
+            channel.subscribe((newStatus, [newError]) {
+              AppLogger.debug(
+                'Reconnection status: $newStatus, error: $newError',
+              );
+            });
+          }
+        });
+      }
+    });
 
     _articleSubscription = channel;
     return channel;
@@ -66,17 +95,25 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          final queryParams = {
-            'team': team?.toUpperCase() ?? '',
-            'archived': archived.toString(),
-            'excludeIds': excludeIds?.join(',') ?? '',
-          };
+          AppLogger.debug('Fetching articles with teamId: $team');
+
+          final queryParams = <String, String>{'archived': archived.toString()};
+
+          if (team?.isNotEmpty == true) {
+            final normalizedTeamId = team!.toUpperCase();
+            queryParams['teamId'] = normalizedTeamId;
+            AppLogger.debug('Adding team filter: $normalizedTeamId');
+          }
+
+          if (excludeIds?.isNotEmpty == true) {
+            queryParams['excludeIds'] = excludeIds!.join(',');
+          }
 
           final uri = Uri.parse(
             AppConfig.edgeFunctionUrl,
           ).replace(queryParameters: queryParams);
 
-          AppLogger.debug('Fetching articles from: $uri');
+          AppLogger.debug('Making request to: $uri');
 
           final response = await client
               .get(
@@ -90,36 +127,38 @@ class SupabaseService {
 
           if (response.statusCode == 200) {
             final List<dynamic> jsonData = jsonDecode(response.body);
-            if (jsonData.isNotEmpty) {
-              final firstArticle = jsonData.first;
-              AppLogger.debug('First article raw JSON:');
-              AppLogger.debug('Keys: ${firstArticle.keys.join(", ")}');
-              AppLogger.debug('Values:');
-              firstArticle.forEach((key, value) {
-                AppLogger.debug('  $key: $value (${value?.runtimeType})');
-              });
+            AppLogger.debug('Received ${jsonData.length} articles from API');
+
+            // Validate teamId filter is working
+            if (team?.isNotEmpty == true) {
+              final filteredCount =
+                  jsonData
+                      .where(
+                        (article) =>
+                            article['teamId']?.toString().toUpperCase() ==
+                            team!.toUpperCase(),
+                      )
+                      .length;
+              AppLogger.debug(
+                'Found $filteredCount articles matching teamId: $team',
+              );
             }
+
             return jsonData.cast<Map<String, dynamic>>();
-          } else if (response.statusCode >= 500) {
-            throw Exception('Server error: ${response.statusCode}');
           } else {
-            AppLogger.error(
-              'Edge function error: ${response.statusCode}',
-              response.body,
-            );
-            return [];
+            AppLogger.error('API error: ${response.statusCode}', response.body);
+            throw Exception('API error: ${response.statusCode}');
           }
         } finally {
           client.close();
         }
       } catch (e) {
         retryCount++;
+        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', null);
         if (retryCount >= _maxRetries) {
-          AppLogger.error(
-            'Error fetching articles after $_maxRetries retries',
-            e,
+          throw Exception(
+            'Failed after $_maxRetries attempts: ${e.toString()}',
           );
-          return [];
         }
         await Future.delayed(_retryDelay * retryCount);
       }

@@ -5,7 +5,7 @@ import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'news_card.dart';
+import 'modern_news_card.dart';
 import 'article_page.dart';
 
 // Simulated Team info (as in your teamMapping)
@@ -22,162 +22,162 @@ final Map<String, TeamInfo> teamMapping = {
   'ARI': TeamInfo(
     id: 'ARI',
     fullName: 'Arizona Cardinals',
-    logo: 'assets/logos/arizona_cardinals.png',
+    logo: '/logos/arizona_cardinals.png',
   ),
   'ATL': TeamInfo(
     id: 'ATL',
     fullName: 'Atlanta Falcons',
-    logo: 'assets/logos/atlanta_falcons.png',
+    logo: '/logos/atlanta_falcons.png',
   ),
   'BAL': TeamInfo(
     id: 'BAL',
     fullName: 'Baltimore Ravens',
-    logo: 'assets/logos/baltimore_ravens.png',
+    logo: '/logos/baltimore_ravens.png',
   ),
   'BUF': TeamInfo(
     id: 'BUF',
     fullName: 'Buffalo Bills',
-    logo: 'assets/logos/buffalo_bills.png',
+    logo: '/logos/buffalo_bills.png',
   ),
   'CAR': TeamInfo(
     id: 'CAR',
     fullName: 'Carolina Panthers',
-    logo: 'assets/logos/carolina_panthers.png',
+    logo: '/logos/carolina_panthers.png',
   ),
   'CHI': TeamInfo(
     id: 'CHI',
     fullName: 'Chicago Bears',
-    logo: 'assets/logos/chicago_bears.png',
+    logo: '/logos/chicago_bears.png',
   ),
   'CIN': TeamInfo(
     id: 'CIN',
     fullName: 'Cincinnati Bengals',
-    logo: 'assets/logos/cincinnati_bengals.png',
+    logo: '/logos/cincinnati_bengals.png',
   ),
   'CLE': TeamInfo(
     id: 'CLE',
     fullName: 'Cleveland Browns',
-    logo: 'assets/logos/cleveland_browns.png',
+    logo: '/logos/cleveland_browns.png',
   ),
   'DAL': TeamInfo(
     id: 'DAL',
     fullName: 'Dallas Cowboys',
-    logo: 'assets/logos/dallas_cowboys.png',
+    logo: '/logos/dallas_cowboys.png',
   ),
   'DEN': TeamInfo(
     id: 'DEN',
     fullName: 'Denver Broncos',
-    logo: 'assets/logos/denver_broncos.png',
+    logo: '/logos/denver_broncos.png',
   ),
   'DET': TeamInfo(
     id: 'DET',
     fullName: 'Detroit Lions',
-    logo: 'assets/logos/detroit_lions.png',
+    logo: '/logos/detroit_lions.png',
   ),
   'GB': TeamInfo(
     id: 'GB',
     fullName: 'Green Bay Packers',
-    logo: 'assets/logos/Green_bay_packers.png',
+    logo: '/logos/Green_bay_packers.png',
   ),
   'HOU': TeamInfo(
     id: 'HOU',
     fullName: 'Houston Texans',
-    logo: 'assets/logos/houston_texans.png',
+    logo: '/logos/houston_texans.png',
   ),
   'IND': TeamInfo(
     id: 'IND',
     fullName: 'Indianapolis Colts',
-    logo: 'assets/logos/indianapolis_colts.png',
+    logo: '/logos/indianapolis_colts.png',
   ),
   'JAX': TeamInfo(
     id: 'JAX',
     fullName: 'Jacksonville Jaguars',
-    logo: 'assets/logos/jacksonville_jaguars.png',
+    logo: '/logos/jacksonville_jaguars.png',
   ),
   'KC': TeamInfo(
     id: 'KC',
     fullName: 'Kansas City Chiefs',
-    logo: 'assets/logos/kansas_city_chiefs.png',
+    logo: '/logos/kansas_city_chiefs.png',
   ),
   'LV': TeamInfo(
     id: 'LV',
     fullName: 'Las Vegas Raiders',
-    logo: 'assets/logos/las_vegas_raiders.png',
+    logo: '/logos/las_vegas_raiders.png',
   ),
   'LAC': TeamInfo(
     id: 'LAC',
     fullName: 'Los Angeles Chargers',
-    logo: 'assets/logos/los_angeles_chargers.png',
+    logo: '/logos/los_angeles_chargers.png',
   ),
   'LAR': TeamInfo(
     id: 'LAR',
     fullName: 'Los Angeles Rams',
-    logo: 'assets/logos/los_angeles_rams.png',
+    logo: '/logos/los_angeles_rams.png',
   ),
   'MIA': TeamInfo(
     id: 'MIA',
     fullName: 'Miami Dolphins',
-    logo: 'assets/logos/miami_dolphins.png',
+    logo: '/logos/miami_dolphins.png',
   ),
   'MIN': TeamInfo(
     id: 'MIN',
     fullName: 'Minnesota Vikings',
-    logo: 'assets/logos/minnesota_vikings.png',
+    logo: '/logos/minnesota_vikings.png',
   ),
   'NE': TeamInfo(
     id: 'NE',
     fullName: 'New England Patriots',
-    logo: 'assets/logos/new_england_patriots.png',
+    logo: '/logos/new_england_patriots.png',
   ),
   'NO': TeamInfo(
     id: 'NO',
     fullName: 'New Orleans Saints',
-    logo: 'assets/logos/new_orleans_saints.png',
+    logo: '/logos/new_orleans_saints.png',
   ),
   'NYG': TeamInfo(
     id: 'NYG',
     fullName: 'New York Giants',
-    logo: 'assets/logos/new_york_giants.png',
+    logo: '/logos/new_york_giants.png',
   ),
   'NYJ': TeamInfo(
     id: 'NYJ',
     fullName: 'New York Jets',
-    logo: 'assets/logos/new_york_jets.png',
+    logo: '/logos/new_york_jets.png',
   ),
   'PHI': TeamInfo(
     id: 'PHI',
     fullName: 'Philadelphia Eagles',
-    logo: 'assets/logos/philadelphia_eagles.png',
+    logo: '/logos/philadelphia_eagles.png',
   ),
   'PIT': TeamInfo(
     id: 'PIT',
     fullName: 'Pittsburgh Steelers',
-    logo: 'assets/logos/pittsbourg_steelers.png',
+    logo: '/logos/pittsbourg_steelers.png',
   ),
   'SF': TeamInfo(
     id: 'SF',
     fullName: 'San Francisco 49ers',
-    logo: 'assets/logos/san_francisco_49ers.png',
+    logo: '/logos/san_francisco_49ers.png',
   ),
   'SEA': TeamInfo(
     id: 'SEA',
     fullName: 'Seattle Seahawks',
-    logo: 'assets/logos/seattle_seahawks.png',
+    logo: '/logos/seattle_seahawks.png',
   ),
   'TB': TeamInfo(
     id: 'TB',
     fullName: 'Tampa Bay Buccaneers',
-    logo: 'assets/logos/tampa_bay_buccaneers.png',
+    logo: '/logos/tampa_bay_buccaneers.png',
   ),
   'TEN': TeamInfo(
     id: 'TEN',
     fullName: 'Tennessee Titans',
-    logo: 'assets/logos/tennessee_titans.png',
+    logo: '/logos/tennessee_titans.png',
   ),
   'WAS': TeamInfo(
     id: 'WAS',
     fullName: 'Washington Commanders',
-    logo: 'assets/logos/washington_commanders.png',
+    logo: '/logos/washington_commanders.png',
   ),
 };
 
@@ -189,7 +189,8 @@ class News extends StatefulWidget {
 }
 
 class _NewsState extends State<News> {
-  String selectedTeam = "";
+  String?
+  selectedTeamId; // Changed from selectedTeam to selectedTeamId for clarity
   bool showArchived = false;
   Future<List<Article>>? articlesFuture;
   List<Article> articles = [];
@@ -219,21 +220,23 @@ class _NewsState extends State<News> {
 
     // Create new subscription
     _subscription = SupabaseService.subscribeToArticles(
-      team: selectedTeam.isNotEmpty ? selectedTeam : null,
+      team: selectedTeamId, // Use selectedTeamId
       archived: showArchived,
       onArticlesUpdate: (articles) {
         if (mounted) {
           setState(() {
+            AppLogger.debug(
+              'Received realtime update with ${articles.length} articles',
+            );
             this.articles =
                 articles
                     .map((articleJson) => Article.fromJson(articleJson))
-                    .toList();
-            // Sort by date
-            this.articles.sort(
-              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                a.createdAt ?? DateTime.now(),
-              ),
-            );
+                    .toList()
+                  ..sort(
+                    (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                      a.createdAt ?? DateTime.now(),
+                    ),
+                  );
           });
         }
       },
@@ -241,6 +244,7 @@ class _NewsState extends State<News> {
   }
 
   Future<List<Article>> _fetchArticles() async {
+    AppLogger.debug('Fetching articles with teamId filter: "$selectedTeamId"');
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -249,15 +253,20 @@ class _NewsState extends State<News> {
     try {
       // Get articles from edge function
       final articlesData = await SupabaseService.getArticles(
-        team: selectedTeam.isNotEmpty ? selectedTeam : null,
+        team: selectedTeamId,
         archived: showArchived,
       );
 
+      AppLogger.debug('Received ${articlesData.length} articles from service');
+
       // Map the JSON data to Article objects
       final List<Article> fetchedArticles =
-          articlesData
-              .map((articleJson) => Article.fromJson(articleJson))
-              .toList();
+          articlesData.map((articleJson) {
+            AppLogger.debug(
+              'Processing article with teamId: ${articleJson['teamId']}',
+            );
+            return Article.fromJson(articleJson);
+          }).toList();
 
       // Sort by date
       fetchedArticles.sort(
@@ -265,6 +274,14 @@ class _NewsState extends State<News> {
           a.createdAt ?? DateTime.now(),
         ),
       );
+
+      // Log the filtered articles
+      AppLogger.debug('Filtered articles count: ${fetchedArticles.length}');
+      if (selectedTeamId != null) {
+        AppLogger.debug(
+          'Articles for team $selectedTeamId: ${fetchedArticles.where((a) => a.teamId == selectedTeamId).length}',
+        );
+      }
 
       // Update the articles list
       setState(() {
@@ -297,6 +314,7 @@ class _NewsState extends State<News> {
   }
 
   void _refreshArticles() {
+    AppLogger.debug('Refreshing articles with teamId: "$selectedTeamId"');
     setState(() {
       articlesFuture = _fetchArticles();
     });
@@ -405,7 +423,8 @@ class _NewsState extends State<News> {
                                   InkWell(
                                     onTap: () {
                                       setState(() {
-                                        selectedTeam = ""; // Clear filter
+                                        selectedTeamId =
+                                            null; // Use null instead of empty string
                                       });
                                       _refreshArticles();
                                       Navigator.pop(context);
@@ -424,8 +443,8 @@ class _NewsState extends State<News> {
                                     (team) => InkWell(
                                       onTap: () {
                                         setState(() {
-                                          selectedTeam =
-                                              team.id; // Store team code
+                                          selectedTeamId =
+                                              team.id.toUpperCase();
                                         });
                                         _refreshArticles();
                                         Navigator.pop(context);
@@ -433,8 +452,18 @@ class _NewsState extends State<News> {
                                       child: Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Image.asset(
-                                          team.logo,
+                                          'assets/${team.logo}',
                                           height: 35,
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Image.asset(
+                                              'assets/images/placeholder.jpeg',
+                                              height: 35,
+                                            );
+                                          },
                                         ),
                                       ),
                                     ),
@@ -459,10 +488,16 @@ class _NewsState extends State<News> {
                         Icon(Icons.filter_list),
                         const SizedBox(width: 8),
                         Image.asset(
-                          selectedTeam.isEmpty
+                          selectedTeamId == null
                               ? 'assets/logos/nfl.png'
-                              : teamMapping[selectedTeam]!.logo,
+                              : 'assets/${teamMapping[selectedTeamId]!.logo}',
                           height: 30,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/placeholder.jpeg',
+                              height: 30,
+                            );
+                          },
                         ),
                         Icon(Icons.arrow_drop_down),
                       ],
@@ -544,23 +579,16 @@ class _NewsState extends State<News> {
                             physics: NeverScrollableScrollPhysics(),
                             itemCount: articles.length,
                             gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount:
-                                      MediaQuery.of(context).size.width > 800
-                                          ? 3
-                                          : MediaQuery.of(context).size.width >
-                                              600
-                                          ? 2
-                                          : 1,
+                                SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 600,
+                                  mainAxisExtent: 120,
                                   crossAxisSpacing: 8,
                                   mainAxisSpacing: 8,
-                                  childAspectRatio: 1,
                                 ),
                             itemBuilder: (context, index) {
-                              return NewsCard(
+                              return ModernNewsCard(
                                 article: articles[index],
                                 onArticleClick: _onArticleClick,
-                                variant: 'vertical',
                               );
                             },
                           ),
@@ -597,10 +625,10 @@ class _NewsState extends State<News> {
                 } else {
                   // If no articles are available.
                   String noNewsText =
-                      selectedTeam.isNotEmpty
+                      selectedTeamId != null
                           ? (isEnglish
-                              ? 'No news available for ${teamMapping[selectedTeam]?.fullName ?? ''}'
-                              : 'Keine Nachrichten verfügbar für ${teamMapping[selectedTeam]?.fullName ?? ''}')
+                              ? 'No news available for ${teamMapping[selectedTeamId]?.fullName ?? ''}'
+                              : 'Keine Nachrichten verfügbar für ${teamMapping[selectedTeamId]?.fullName ?? ''}')
                           : (isEnglish
                               ? 'No news available'
                               : 'Keine Nachrichten verfügbar');
