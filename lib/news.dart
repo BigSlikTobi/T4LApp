@@ -314,23 +314,20 @@ class _NewsState extends State<News> {
       );
       AppLogger.debug('Received ${tickers.length} tickers from service');
 
-      // Log details of each ticker
-      for (var ticker in tickers) {
-        AppLogger.debug('''
-Ticker details:
-- ID: ${ticker.id}
-- Headline: ${ticker.headline}
-- Image URL: ${ticker.imageUrl}
-- Team: ${ticker.team?.teamId}
-- Source: ${ticker.sourceArticle?.source?.name}
-''');
-      }
+      // Sort by publishedAt date
+      final sortedTickers =
+          tickers.toList()..sort((a, b) {
+            final aDate = DateTime.tryParse(a.sourceArticle?.publishedAt ?? '');
+            final bDate = DateTime.tryParse(b.sourceArticle?.publishedAt ?? '');
+            if (aDate == null || bDate == null) return 0;
+            return bDate.compareTo(aDate); // newest first
+          });
 
       if (mounted) {
         setState(() {
-          newsTickers = tickers;
+          newsTickers = sortedTickers;
           AppLogger.debug(
-            'Updated newsTickers state with ${tickers.length} items',
+            'Updated newsTickers state with ${sortedTickers.length} items',
           );
         });
       }
@@ -439,7 +436,7 @@ Ticker details:
             child: Row(
               children: [
                 Text(
-                  isEnglish ? 'NFL News' : 'NFL Nachrichten',
+                  isEnglish ? 'NFL News' : 'NFL News',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

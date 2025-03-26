@@ -35,13 +35,11 @@ class Article {
     // Check multiple possible ID field names
     final possibleIdFields = ['id', 'articleId', 'article_id', 'ID'];
     var rawId;
-    var usedField = '';
 
     // Try each possible ID field
     for (var field in possibleIdFields) {
       if (json.containsKey(field) && json[field] != null) {
         rawId = json[field];
-        usedField = field;
         break;
       }
     }
