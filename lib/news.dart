@@ -187,7 +187,7 @@ class News extends StatefulWidget {
   const News({super.key});
 
   @override
-  _NewsState createState() => _NewsState();
+  State<News> createState() => _NewsState();
 }
 
 class _NewsState extends State<News> {
@@ -373,343 +373,330 @@ class _NewsState extends State<News> {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isEnglish =
         languageProvider.currentLanguage == LanguageProvider.english;
+    final isWeb = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Image.asset(
-          'assets/images/T4LLogo.png',
-          height: 80,
-          fit: BoxFit.contain,
-        ),
-        actions: [
-          // Language toggle button with improved visibility
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              onTap: () {
-                languageProvider.toggleLanguage();
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWeb ? 24.0 : 16.0,
+                  vertical: 8.0,
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      isEnglish ? 'EN' : 'DE',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
+                    Spacer(),
+                    // Custom dropdown-like widget for team selection
+                    GestureDetector(
+                      onTap: () {
+                        // Show custom dialog with team logos
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Dialog(
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Container(
+                                width: 80,
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // All Teams option (NFL logo)
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            selectedTeamId =
+                                                null; // Use null instead of empty string
+                                          });
+                                          _refreshArticles();
+                                          Navigator.pop(context);
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Image.asset(
+                                            'assets/logos/nfl.png',
+                                            height: 35,
+                                          ),
+                                        ),
+                                      ),
+                                      Divider(height: 1),
+                                      // Individual team logos
+                                      ...allTeams.map(
+                                        (team) => InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedTeamId =
+                                                  team.id.toUpperCase();
+                                            });
+                                            _refreshArticles();
+                                            Navigator.pop(context);
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Image.asset(
+                                              'assets/${team.logo}',
+                                              height: 35,
+                                              errorBuilder: (
+                                                context,
+                                                error,
+                                                stackTrace,
+                                              ) {
+                                                return Image.asset(
+                                                  'assets/images/placeholder.jpeg',
+                                                  height: 35,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.primary),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.filter_list),
+                            const SizedBox(width: 8),
+                            Image.asset(
+                              selectedTeamId == null
+                                  ? 'assets/logos/nfl.png'
+                                  : 'assets/${teamMapping[selectedTeamId]!.logo}',
+                              height: 30,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/placeholder.jpeg',
+                                  height: 30,
+                                );
+                              },
+                            ),
+                            Icon(Icons.arrow_drop_down),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 6),
-                    Icon(
-                      Icons.language,
-                      size: 20,
-                      color: theme.colorScheme.primary,
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              children: [
-                Text(
-                  isEnglish ? 'NFL News' : 'NFL News',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Spacer(),
-                // Custom dropdown-like widget instead of PopupMenuButton
-                GestureDetector(
-                  onTap: () {
-                    // Show custom dialog with team logos
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return Dialog(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: FutureBuilder<List<Article>>(
+                  future: articlesFuture ?? Future.value([]),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting ||
+                        isLoading) {
+                      // Show a progress indicator while loading
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: theme.colorScheme.primary,
+                        ),
+                      );
+                    } else if (errorMessage != null) {
+                      // Show error message if there was a problem
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              errorMessage!,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: Colors.red,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refreshArticles,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.primary,
+                              ),
+                              child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (snapshot.hasError) {
+                      // Handle specific Future error
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              isEnglish
+                                  ? 'Error loading articles: ${snapshot.error}'
+                                  : 'Fehler beim Laden der Artikel: ${snapshot.error}',
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                            SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refreshArticles,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.primary,
+                              ),
+                              child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (articles.isNotEmpty || newsTickers.isNotEmpty) {
+                      return SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWeb ? 24.0 : 8.0,
                           ),
-                          child: Container(
-                            width: 80,
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // All Teams option (NFL logo)
-                                  InkWell(
-                                    onTap: () {
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Show news tickers
+                              NewsTickerSlideShow(
+                                tickers: newsTickers,
+                                isEnglish: isEnglish,
+                              ),
+
+                              // Grid view for displaying articles.
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  itemCount:
+                                      showArchived
+                                          ? articles.length
+                                          : articles.where((article) {
+                                            if (article.createdAt == null)
+                                              return false;
+                                            final cutoffDate = DateTime.now()
+                                                .subtract(
+                                                  const Duration(hours: 36),
+                                                );
+                                            return article.createdAt!.isAfter(
+                                              cutoffDate,
+                                            );
+                                          }).length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithMaxCrossAxisExtent(
+                                        maxCrossAxisExtent: isWeb ? 600 : 600,
+                                        mainAxisExtent: 120,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                      ),
+                                  itemBuilder: (context, index) {
+                                    final displayedArticles =
+                                        showArchived
+                                            ? articles
+                                            : articles.where((article) {
+                                              if (article.createdAt == null)
+                                                return false;
+                                              final cutoffDate = DateTime.now()
+                                                  .subtract(
+                                                    const Duration(hours: 36),
+                                                  );
+                                              return article.createdAt!.isAfter(
+                                                cutoffDate,
+                                              );
+                                            }).toList();
+                                    return ModernNewsCard(
+                                      article: displayedArticles[index],
+                                      onArticleClick: _onArticleClick,
+                                    );
+                                  },
+                                ),
+                              ),
+                              // Button to toggle archived articles.
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0,
+                                ),
+                                child: Center(
+                                  child: TextButton(
+                                    onPressed: () {
                                       setState(() {
-                                        selectedTeamId =
-                                            null; // Use null instead of empty string
+                                        showArchived = !showArchived;
                                       });
                                       _refreshArticles();
-                                      Navigator.pop(context);
                                     },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Image.asset(
-                                        'assets/logos/nfl.png',
-                                        height: 35,
-                                      ),
+                                    child: Text(
+                                      showArchived
+                                          ? (isEnglish
+                                              ? "Hide Older Articles..."
+                                              : "Ältere Artikel ausblenden...")
+                                          : (isEnglish
+                                              ? "Load Older Articles..."
+                                              : "Ältere Artikel laden..."),
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            color: theme.colorScheme.primary,
+                                          ),
                                     ),
                                   ),
-                                  Divider(height: 1),
-                                  // Individual team logos
-                                  ...allTeams.map(
-                                    (team) => InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedTeamId =
-                                              team.id.toUpperCase();
-                                        });
-                                        _refreshArticles();
-                                        Navigator.pop(context);
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Image.asset(
-                                          'assets/${team.logo}',
-                                          height: 35,
-                                          errorBuilder: (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) {
-                                            return Image.asset(
-                                              'assets/images/placeholder.jpeg',
-                                              height: 35,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        );
-                      },
-                    );
+                        ),
+                      );
+                    } else {
+                      // If no articles are available.
+                      String noNewsText =
+                          selectedTeamId != null
+                              ? (isEnglish
+                                  ? 'No news available for ${teamMapping[selectedTeamId]?.fullName ?? ''}'
+                                  : 'Keine Nachrichten verfügbar für ${teamMapping[selectedTeamId]?.fullName ?? ''}')
+                              : (isEnglish
+                                  ? 'No news available'
+                                  : 'Keine Nachrichten verfügbar');
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(noNewsText, style: theme.textTheme.bodyLarge),
+                            if (!showArchived)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    showArchived = true;
+                                  });
+                                  _refreshArticles();
+                                },
+                                child: Text(
+                                  isEnglish
+                                      ? "Load Older Articles..."
+                                      : "Ältere Artikel laden...",
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
                   },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.primary),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.filter_list),
-                        const SizedBox(width: 8),
-                        Image.asset(
-                          selectedTeamId == null
-                              ? 'assets/logos/nfl.png'
-                              : 'assets/${teamMapping[selectedTeamId]!.logo}',
-                          height: 30,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/placeholder.jpeg',
-                              height: 30,
-                            );
-                          },
-                        ),
-                        Icon(Icons.arrow_drop_down),
-                      ],
-                    ),
-                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: FutureBuilder<List<Article>>(
-              future: articlesFuture ?? Future.value([]),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting ||
-                    isLoading) {
-                  // Show a progress indicator while loading
-                  return Center(
-                    child: CircularProgressIndicator(
-                      color: theme.colorScheme.primary,
-                    ),
-                  );
-                } else if (errorMessage != null) {
-                  // Show error message if there was a problem
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          errorMessage!,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.red,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _refreshArticles,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                          ),
-                          child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (snapshot.hasError) {
-                  // Handle specific Future error
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isEnglish
-                              ? 'Error loading articles: ${snapshot.error}'
-                              : 'Fehler beim Laden der Artikel: ${snapshot.error}',
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                        SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _refreshArticles,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                          ),
-                          child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (articles.isNotEmpty || newsTickers.isNotEmpty) {
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Show news tickers
-                        NewsTickerSlideShow(
-                          tickers: newsTickers,
-                          isEnglish: isEnglish,
-                        ),
-
-                        // Grid view for displaying articles.
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: articles.length,
-                            gridDelegate:
-                                SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 600,
-                                  mainAxisExtent: 120,
-                                  crossAxisSpacing: 8,
-                                  mainAxisSpacing: 8,
-                                ),
-                            itemBuilder: (context, index) {
-                              return ModernNewsCard(
-                                article: articles[index],
-                                onArticleClick: _onArticleClick,
-                              );
-                            },
-                          ),
-                        ),
-                        // Button to toggle archived articles.
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: Center(
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  showArchived = !showArchived;
-                                });
-                                _refreshArticles();
-                              },
-                              child: Text(
-                                showArchived
-                                    ? (isEnglish
-                                        ? "Hide Older Articles..."
-                                        : "Ältere Artikel ausblenden...")
-                                    : (isEnglish
-                                        ? "Load Older Articles..."
-                                        : "Ältere Artikel laden..."),
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  // If no articles are available.
-                  String noNewsText =
-                      selectedTeamId != null
-                          ? (isEnglish
-                              ? 'No news available for ${teamMapping[selectedTeamId]?.fullName ?? ''}'
-                              : 'Keine Nachrichten verfügbar für ${teamMapping[selectedTeamId]?.fullName ?? ''}')
-                          : (isEnglish
-                              ? 'No news available'
-                              : 'Keine Nachrichten verfügbar');
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(noNewsText, style: theme.textTheme.bodyLarge),
-                        if (!showArchived)
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                showArchived = true;
-                              });
-                              _refreshArticles();
-                            },
-                            child: Text(
-                              isEnglish
-                                  ? "Load Older Articles..."
-                                  : "Ältere Artikel laden...",
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

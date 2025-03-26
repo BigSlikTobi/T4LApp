@@ -9,7 +9,6 @@ import 'package:intl/intl.dart';
 
 class ArticlePage extends StatefulWidget {
   final Article article;
-
   const ArticlePage({super.key, required this.article});
 
   @override
@@ -27,7 +26,6 @@ class _ArticlePageState extends State<ArticlePage> {
   }
 
   Future<void> _processImageUrls() async {
-    // Process the main image
     if (widget.article.imageUrl != null &&
         widget.article.imageUrl!.isNotEmpty) {
       try {
@@ -48,12 +46,40 @@ class _ArticlePageState extends State<ArticlePage> {
     }
   }
 
+  String _formatDate(DateTime? date, bool isEnglish) {
+    if (date == null) return isEnglish ? 'No date' : 'Kein Datum';
+    final format =
+        isEnglish ? DateFormat('MMM d, yyyy') : DateFormat('dd.MM.yyyy');
+    return format.format(date);
+  }
+
   Widget _buildLoadingPlaceholder(ThemeData theme) {
     return Container(
       color: theme.colorScheme.surface,
       child: Center(
         child: CircularProgressIndicator(color: theme.colorScheme.primary),
       ),
+    );
+  }
+
+  Widget _buildFallbackImage() {
+    return Image.asset(
+      'assets/images/noHuddle.jpg',
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      errorBuilder: (context, error, stackTrace) {
+        AppLogger.error('Error loading fallback image', error);
+        return Container(
+          color: Colors.grey[300],
+          child: const Center(
+            child: Icon(
+              Icons.image_not_supported,
+              size: 50,
+              color: Colors.grey,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -67,131 +93,248 @@ class _ArticlePageState extends State<ArticlePage> {
         isEnglish
             ? widget.article.englishArticle
             : widget.article.germanArticle;
+    final screenSize = MediaQuery.of(context).size;
+    final isWeb = screenSize.width > 600;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          isEnglish
-              ? widget.article.englishHeadline
-              : widget.article.germanHeadline,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Date and source
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Text(
-                        widget.article.createdAt != null
-                            ? DateFormat(
-                              'MMM d, yyyy',
-                            ).format(widget.article.createdAt!)
-                            : '',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.secondary,
-                        ),
-                      ),
-                      if (widget.article.sourceAuthor != null &&
-                          widget.article.sourceAuthor!.isNotEmpty)
-                        Text(
-                          ' | ${widget.article.sourceAuthor}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.secondary,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                    ],
+        title: Image.asset(
+          'assets/images/T4LLogo.png',
+          height: 80,
+          fit: BoxFit.contain,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: InkWell(
+              onTap: () {
+                languageProvider.toggleLanguage();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(
+                    color: theme.colorScheme.primary,
+                    width: 2,
                   ),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
                 ),
-
-                // Main image
-                if (_processedImageUrl != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        _processedImageUrl!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) {
-                          AppLogger.error(
-                            'Error loading article image: ${widget.article.imageUrl}',
-                            error,
-                          );
-                          return Image.asset(
-                            'assets/images/placeholder.jpeg',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return _buildLoadingPlaceholder(theme);
-                        },
+                child: Row(
+                  children: [
+                    Text(
+                      isEnglish ? 'EN' : 'DE',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                  ),
-
-                // HTML content
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Html(
-                    data: articleContent,
-                    style: {
-                      "body": Style(
-                        fontSize: FontSize(16.0),
-                        fontFamily: 'Roboto',
-                        lineHeight: LineHeight(1.6),
-                      ),
-                      "h1": Style(
-                        fontSize: FontSize(24.0),
-                        fontWeight: FontWeight.bold,
-                        margin: Margins(top: Margin(16), bottom: Margin(16)),
-                      ),
-                      "h2": Style(
-                        fontSize: FontSize(20.0),
-                        fontWeight: FontWeight.bold,
-                        margin: Margins(top: Margin(12), bottom: Margin(12)),
-                      ),
-                      "h3": Style(
-                        fontSize: FontSize(18.0),
-                        fontWeight: FontWeight.bold,
-                        margin: Margins(top: Margin(8), bottom: Margin(8)),
-                      ),
-                      "p": Style(
-                        margin: Margins(top: Margin(8), bottom: Margin(8)),
-                      ),
-                      "blockquote": Style(
-                        margin: Margins(
-                          left: Margin(16),
-                          right: Margin(16),
-                          top: Margin(16),
-                          bottom: Margin(16),
-                        ),
-                        padding: HtmlPaddings(left: HtmlPadding(16)),
-                        border: Border(
-                          left: BorderSide(
-                            color: theme.colorScheme.primary,
-                            width: 4,
-                          ),
-                        ),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    },
-                  ),
+                    SizedBox(width: 6),
+                    Icon(
+                      Icons.language,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
                 ),
-              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isWeb ? 24.0 : 16.0,
+                  vertical: 16.0,
+                ),
+                child: Column(
+                  children: [
+                    // Page header with image
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: screenSize.height * 0.015,
+                        horizontal: isWeb ? 24.0 : screenSize.width * 0.04,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.asset(
+                                'assets/images/noHuddleCrop.jpg',
+                                height: 40,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Main content card
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Headline
+                          Padding(
+                            padding: EdgeInsets.all(isWeb ? 24.0 : 16.0),
+                            child: Text(
+                              isEnglish
+                                  ? widget.article.englishHeadline
+                                  : widget.article.germanHeadline,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          // Main image
+                          if (_processedImageUrl != null)
+                            SizedBox(
+                              height: isWeb ? 400 : screenSize.height * 0.35,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _processedImageUrl!,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                  errorBuilder:
+                                      (_, __, ___) => _buildFallbackImage(),
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
+                                    if (loadingProgress == null) return child;
+                                    return _buildLoadingPlaceholder(theme);
+                                  },
+                                ),
+                              ),
+                            ),
+                          // Article content
+                          Padding(
+                            padding: EdgeInsets.all(isWeb ? 24.0 : 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Date and author
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _formatDate(
+                                          widget.article.createdAt,
+                                          isEnglish,
+                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(color: Colors.grey[600]),
+                                      ),
+                                    ),
+                                    if (widget.article.sourceAuthor != null)
+                                      Flexible(
+                                        child: Text(
+                                          widget.article.sourceAuthor!,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                          textAlign: TextAlign.end,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+                                // HTML content
+                                Html(
+                                  data: articleContent,
+                                  style: {
+                                    "body": Style(
+                                      fontSize: FontSize(16.0),
+                                      fontFamily: 'Roboto',
+                                      lineHeight: LineHeight(1.6),
+                                    ),
+                                    "h1": Style(
+                                      fontSize: FontSize(24.0),
+                                      fontWeight: FontWeight.bold,
+                                      margin: Margins(
+                                        top: Margin(16),
+                                        bottom: Margin(16),
+                                      ),
+                                    ),
+                                    "h2": Style(
+                                      fontSize: FontSize(20.0),
+                                      fontWeight: FontWeight.bold,
+                                      margin: Margins(
+                                        top: Margin(12),
+                                        bottom: Margin(12),
+                                      ),
+                                    ),
+                                    "h3": Style(
+                                      fontSize: FontSize(18.0),
+                                      fontWeight: FontWeight.bold,
+                                      margin: Margins(
+                                        top: Margin(8),
+                                        bottom: Margin(8),
+                                      ),
+                                    ),
+                                    "p": Style(
+                                      margin: Margins(
+                                        top: Margin(8),
+                                        bottom: Margin(8),
+                                      ),
+                                    ),
+                                    "blockquote": Style(
+                                      margin: Margins(
+                                        left: Margin(16),
+                                        right: Margin(16),
+                                        top: Margin(16),
+                                        bottom: Margin(16),
+                                      ),
+                                      padding: HtmlPaddings(
+                                        left: HtmlPadding(16),
+                                      ),
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: theme.colorScheme.primary,
+                                          width: 4,
+                                        ),
+                                      ),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

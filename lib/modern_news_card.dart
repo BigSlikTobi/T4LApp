@@ -22,6 +22,7 @@ class ModernNewsCard extends StatelessWidget {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isEnglish =
         languageProvider.currentLanguage == LanguageProvider.english;
+    final isWeb = MediaQuery.of(context).size.width > 600;
     final headline =
         isEnglish ? article.englishHeadline : article.germanHeadline;
 
@@ -36,159 +37,162 @@ class ModernNewsCard extends StatelessWidget {
       }
     }
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => onArticleClick(article.id),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Calculate dynamic height based on width to maintain proper aspect ratio
-            final cardHeight = constraints.maxWidth * 0.3;
-            return Container(
-              constraints: BoxConstraints(minHeight: 80, maxHeight: 120),
-              height: cardHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left side - Image with status badge (1/3 of the card)
-                  Expanded(
-                    flex: 1,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Image
-                        if (article.imageUrl != null)
-                          Image.network(
-                            article.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              AppLogger.error(
-                                'Error loading article image: ${article.imageUrl}',
-                                error,
-                              );
-                              return Image.asset(
-                                'images/placeholder.jpeg',
-                                fit: BoxFit.cover,
-                              );
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value:
-                                      loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                          : null,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              );
-                            },
-                          )
-                        else
-                          Image.asset(
-                            'images/placeholder.jpeg',
-                            fit: BoxFit.cover,
-                          ),
-                        // Status badge overlay
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(article.status),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _getStatusText(article.status, isEnglish),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Right side - Content (2/3 of the card)
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        elevation: isWeb ? 1 : 2,
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          onTap: () => onArticleClick(article.id),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardHeight = constraints.maxWidth * 0.3;
+              return Container(
+                constraints: BoxConstraints(
+                  minHeight: 80,
+                  maxHeight: isWeb ? 160 : 120,
+                ),
+                height: cardHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left side - Image with status badge
+                    Expanded(
+                      flex: isWeb ? 3 : 1,
+                      child: Stack(
+                        fit: StackFit.expand,
                         children: [
-                          // Team logo row
-                          if (article.teamId != null)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: SizedBox(
-                                height: 16,
-                                child: Builder(
-                                  builder: (context) {
-                                    final teamId =
-                                        article.teamId!.toUpperCase();
-                                    if (!teamMapping.containsKey(teamId)) {
-                                      AppLogger.error(
-                                        'No team mapping found for teamId: $teamId',
-                                      );
-                                      return const SizedBox.shrink();
-                                    }
-                                    return Image.asset(
-                                      'assets${teamMapping[teamId]!.logo}',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        AppLogger.error(
-                                          'Error loading team logo for $teamId',
-                                          error,
-                                        );
-                                        return const SizedBox.shrink();
-                                      },
-                                    );
-                                  },
+                          if (article.imageUrl != null)
+                            Image.network(
+                              article.imageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                AppLogger.error(
+                                  'Error loading article image: ${article.imageUrl}',
+                                  error,
+                                );
+                                return Image.asset(
+                                  'assets/images/placeholder.jpeg',
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value:
+                                        loadingProgress.expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                );
+                              },
+                            )
+                          else
+                            Image.asset(
+                              'assets/images/placeholder.jpeg',
+                              fit: BoxFit.cover,
+                            ),
+                          // Status badge overlay
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(article.status),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _getStatusText(article.status, isEnglish),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                          const SizedBox(height: 2),
-                          Expanded(
-                            child: Text(
-                              headline,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            formattedDate,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 11,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                    // Right side - Content
+                    Expanded(
+                      flex: isWeb ? 4 : 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(isWeb ? 20.0 : 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (article.teamId != null)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: SizedBox(
+                                  height: 16,
+                                  child: Builder(
+                                    builder: (context) {
+                                      final teamId =
+                                          article.teamId!.toUpperCase();
+                                      if (!teamMapping.containsKey(teamId)) {
+                                        AppLogger.error(
+                                          'No team mapping found for teamId: $teamId',
+                                        );
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Image.asset(
+                                        'assets${teamMapping[teamId]!.logo}',
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          return const SizedBox.shrink();
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                headline ?? '',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.3,
+                                ),
+                                maxLines: isWeb ? 3 : 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              formattedDate,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

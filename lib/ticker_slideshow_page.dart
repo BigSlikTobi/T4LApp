@@ -66,11 +66,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
         languageProvider.currentLanguage == LanguageProvider.english;
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
-
-    // Log screen dimensions for debugging
-    AppLogger.debug(
-      'Building TickerSlideshowPage - Screen size: ${screenSize.width} x ${screenSize.height}',
-    );
+    final isWeb = screenSize.width > 600;
 
     return Scaffold(
       appBar: AppBar(
@@ -131,49 +127,59 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Page header with image - responsive padding
-            Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: screenSize.height * 0.015,
-                horizontal: screenSize.width * 0.04,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        'assets/images/noHuddleCrop.jpg',
-                        height: 40, // Match the previous text height
-                        fit: BoxFit.contain,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Page header with image - responsive padding
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: screenSize.height * 0.015,
+                    horizontal: isWeb ? 24.0 : screenSize.width * 0.04,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            'assets/images/noHuddleCrop.jpg',
+                            height: 40, // Match the previous text height
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+
+                // Slideshow with responsive width
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWeb ? 24.0 : 16.0,
+                    ),
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: widget.tickers.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentPage = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final ticker = widget.tickers[index];
+                        return _buildSlide(ticker, isEnglish, theme);
+                      },
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Slideshow - remaining space
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget.tickers.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final ticker = widget.tickers[index];
-                  return _buildSlide(ticker, isEnglish, theme);
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -191,6 +197,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
       ticker.sourceArticle?.publishedAt,
       isEnglish,
     );
+    final isWeb = MediaQuery.of(context).size.width > 600;
 
     // Log for debugging
     AppLogger.debug(
@@ -206,7 +213,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
 
         return Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth * 0.04,
+            horizontal: isWeb ? 24.0 : constraints.maxWidth * 0.04,
             vertical: constraints.maxHeight * 0.02,
           ),
           child: SingleChildScrollView(
@@ -224,7 +231,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                   children: [
                     // Headline - responsive padding
                     Padding(
-                      padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                      padding: EdgeInsets.all(
+                        isWeb ? 24.0 : constraints.maxWidth * 0.04,
+                      ),
                       child: Text(
                         headlineText,
                         style: theme.textTheme.titleLarge?.copyWith(
@@ -237,7 +246,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
 
                     // Image - responsive height with top alignment
                     SizedBox(
-                      height: constraints.maxHeight * 0.35,
+                      height: isWeb ? 400 : constraints.maxHeight * 0.35,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child:
@@ -279,7 +288,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                     // Information - responsive padding
                     if (displayContent != null && displayContent.isNotEmpty)
                       Padding(
-                        padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                        padding: EdgeInsets.all(
+                          isWeb ? 24.0 : constraints.maxWidth * 0.04,
+                        ),
                         child: Text(
                           displayContent,
                           style: theme.textTheme.bodyLarge,
@@ -288,7 +299,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
 
                     // Date and Source with page indicator - responsive padding
                     Padding(
-                      padding: EdgeInsets.all(constraints.maxWidth * 0.04),
+                      padding: EdgeInsets.all(
+                        isWeb ? 24.0 : constraints.maxWidth * 0.04,
+                      ),
                       child: Column(
                         children: [
                           // Date and source row
@@ -351,7 +364,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                           alignment: Alignment.centerRight,
                           child: Image.asset(
                             'assets/logos/${ticker.team!.teamId!.toLowerCase()}.png',
-                            height: constraints.maxHeight * 0.06,
+                            height: isWeb ? 60 : constraints.maxHeight * 0.06,
                             errorBuilder:
                                 (_, __, ___) => const SizedBox.shrink(),
                           ),

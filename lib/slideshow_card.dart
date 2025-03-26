@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:app/models/article.dart';
 import 'package:app/models/news_ticker.dart';
 import 'package:app/ticker_slideshow_page.dart';
@@ -59,7 +60,7 @@ class _SlideShowCardState extends State<SlideShowCard> {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    Widget cardContent = InkWell(
       onTap: widget.onTap,
       child: Stack(
         clipBehavior: Clip.none,
@@ -142,7 +143,7 @@ class _SlideShowCardState extends State<SlideShowCard> {
           // NoHuddle image positioned in front of the card
           Positioned(
             // Move the image up further to create more overlap with the slider
-            bottom: 35,
+            top: 0,
             left: 50,
             right: 50,
             child: Center(
@@ -179,6 +180,34 @@ class _SlideShowCardState extends State<SlideShowCard> {
         ],
       ),
     );
+
+    if (kIsWeb) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate the width factor based on available width
+          // For larger screens (>1200px), use 2/3
+          // For medium screens (>800px), use 3/4
+          // For smaller screens, use full width
+          double widthFactor;
+          if (constraints.maxWidth > 1200) {
+            widthFactor = 2 / 3;
+          } else if (constraints.maxWidth > 800) {
+            widthFactor = 3 / 4;
+          } else {
+            widthFactor = 1.0;
+          }
+
+          return Center(
+            child: FractionallySizedBox(
+              widthFactor: widthFactor,
+              child: cardContent,
+            ),
+          );
+        },
+      );
+    }
+
+    return cardContent;
   }
 }
 
@@ -235,13 +264,15 @@ class QuickNewsSlideShow extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                stops: const [0.5, 1.0],
+                colors: [
+                  Colors.black.withOpacity(0.2), // Added subtle darkness at top
+                  Colors.black.withOpacity(0.8), // Made bottom gradient darker
+                ],
+                stops: const [0.4, 1.0],
               ),
             ),
           ),
         ),
-
         // Article headline
         Positioned(
           bottom: 0,
@@ -251,13 +282,26 @@ class QuickNewsSlideShow extends StatelessWidget {
             padding: const EdgeInsets.all(12.0),
             child: Text(
               article.englishHeadline,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.8),
+                    offset: const Offset(0, 1),
+                    blurRadius: 3,
+                  ),
+                  Shadow(
+                    color: Colors.black.withOpacity(0.6),
+                    offset: const Offset(0, 2),
+                    blurRadius: 6,
+                  ),
+                ],
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -327,13 +371,15 @@ class NewsTickerSlideShow extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.black.withOpacity(
+              0.3,
+            ), // Darker background for better contrast
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: child,
         ),
@@ -393,9 +439,50 @@ class NewsTickerSlideShow extends StatelessWidget {
                   )
                   : _buildFallbackImage(),
         ),
-        // Headline with glassmorphism at the top
+        // Gradient overlay for better text readability
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.2),
+                  Colors.black.withOpacity(0.8),
+                ],
+                stops: const [0.6, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // Source at the bottom right above headline
+        if (ticker.sourceArticle?.source?.name != null)
+          Positioned(
+            bottom: 64,
+            right: 16,
+            child: _buildGlassmorphicContainer(
+              Text(
+                ticker.sourceArticle!.source!.name!,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11, // 35% smaller than original 14px
+                  fontWeight: FontWeight.w500,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black87,
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // Headline now at the bottom
         Positioned(
-          top: 16,
+          bottom: 16,
           left: 16,
           right: 16,
           child: _buildGlassmorphicContainer(
@@ -407,37 +494,21 @@ class NewsTickerSlideShow extends StatelessWidget {
                 fontSize: 18,
                 shadows: [
                   Shadow(
-                    color: Colors.black26,
+                    color: Colors.black,
+                    offset: Offset(0, 1),
+                    blurRadius: 3,
+                  ),
+                  Shadow(
+                    color: Colors.black54,
                     offset: Offset(0, 2),
-                    blurRadius: 4,
+                    blurRadius: 6,
                   ),
                 ],
               ),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
-          ),
-        ),
-        // Source info at the bottom
-        Positioned(
-          bottom: 16,
-          left: 16,
-          right: 16,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (ticker.sourceArticle?.source?.name != null)
-                _buildGlassmorphicContainer(
-                  Text(
-                    ticker.sourceArticle!.source!.name!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ),
         // Team logo if available
