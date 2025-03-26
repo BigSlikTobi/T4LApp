@@ -3,14 +3,22 @@ import 'package:flutter/foundation.dart';
 
 class AppLogger {
   static final Logger _logger = Logger('T4L');
+  static bool _isInitialized = false;
 
   static void initialize() {
-    Logger.root.level = Level.ALL;
+    if (_isInitialized) return;
+
+    Logger.root.level = kDebugMode ? Level.ALL : Level.INFO;
     Logger.root.onRecord.listen((record) {
       // In development, log to console using debugPrint
-      // In production, you might want to send logs to a service
-      debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+      // In production, only log INFO and above
+      if (kDebugMode || record.level.value >= Level.INFO.value) {
+        debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+      }
     });
+
+    _isInitialized = true;
+    info('Logging initialized. Debug mode: $kDebugMode');
   }
 
   static void info(String message) => _logger.info(message);
@@ -19,5 +27,10 @@ class AppLogger {
     _logger.severe(message, error, stackTrace);
   }
 
-  static void debug(String message) => _logger.fine(message);
+  // Debug logs only appear in debug mode
+  static void debug(String message) {
+    if (kDebugMode) {
+      _logger.fine(message);
+    }
+  }
 }
