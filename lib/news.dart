@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:app/models/article.dart';
+import 'package:app/models/news_ticker.dart';
 import 'package:app/services/supabase_service.dart';
 import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +8,7 @@ import 'package:app/providers/language_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'modern_news_card.dart';
 import 'article_page.dart';
-import 'slideshow_card.dart'; // Import the new slideshow card
+import 'slideshow_card.dart';
 
 // Simulated Team info (as in your teamMapping)
 class TeamInfo {
@@ -195,6 +196,7 @@ class _NewsState extends State<News> {
   bool showArchived = false;
   Future<List<Article>>? articlesFuture;
   List<Article> articles = [];
+  List<NewsTicker> newsTickers = [];
   bool isLoading = false;
   String? errorMessage;
   RealtimeChannel? _subscription;
@@ -203,6 +205,7 @@ class _NewsState extends State<News> {
   void initState() {
     super.initState();
     articlesFuture = _fetchArticles();
+    _fetchNewsTickers();
     _setupRealtimeSubscription();
   }
 
@@ -303,6 +306,40 @@ class _NewsState extends State<News> {
     }
   }
 
+  Future<void> _fetchNewsTickers() async {
+    AppLogger.debug('Starting to fetch news tickers in News widget');
+    try {
+      final tickers = await SupabaseService.getNewsTickers(
+        team: selectedTeamId,
+      );
+      AppLogger.debug('Received ${tickers.length} tickers from service');
+
+      // Log details of each ticker
+      for (var ticker in tickers) {
+        AppLogger.debug('''
+Ticker details:
+- ID: ${ticker.id}
+- Headline: ${ticker.headline}
+- Image URL: ${ticker.imageUrl}
+- Team: ${ticker.team?.teamId}
+- Source: ${ticker.sourceArticle?.source?.name}
+''');
+      }
+
+      if (mounted) {
+        setState(() {
+          newsTickers = tickers;
+          AppLogger.debug(
+            'Updated newsTickers state with ${tickers.length} items',
+          );
+        });
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Error fetching news tickers', e);
+      AppLogger.error('Stack trace:', stackTrace);
+    }
+  }
+
   void _onArticleClick(int id) {
     AppLogger.debug('Navigating to article with ID: $id');
     final article = articles.firstWhere((article) {
@@ -323,6 +360,9 @@ class _NewsState extends State<News> {
     setState(() {
       articlesFuture = _fetchArticles();
     });
+
+    // Also refresh news tickers when articles are refreshed
+    _fetchNewsTickers();
 
     // Re-setup realtime subscription with current filters
     _setupRealtimeSubscription();
@@ -571,13 +611,16 @@ class _NewsState extends State<News> {
                       ],
                     ),
                   );
-                } else if (articles.isNotEmpty) {
+                } else if (articles.isNotEmpty || newsTickers.isNotEmpty) {
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Add the slideshow card at the top with top articles
-                        QuickNewsSlideShow(articles: articles.take(5).toList()),
+                        // Show news tickers
+                        NewsTickerSlideShow(
+                          tickers: newsTickers,
+                          isEnglish: isEnglish,
+                        ),
 
                         // Grid view for displaying articles.
                         Padding(

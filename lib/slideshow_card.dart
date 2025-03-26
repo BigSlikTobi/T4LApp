@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:app/models/article.dart';
+import 'package:app/models/news_ticker.dart';
 
 class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
@@ -268,6 +269,179 @@ class QuickNewsSlideShow extends StatelessWidget {
           child: const Text(
             'Quick news from the NFL',
             style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFallbackImage() {
+    return Image.asset(
+      'assets/images/noHuddle.jpg',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey[300],
+          child: const Center(
+            child: Icon(
+              Icons.image_not_supported,
+              size: 50,
+              color: Colors.grey,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class NewsTickerSlideShow extends StatelessWidget {
+  final List<NewsTicker> tickers;
+  final bool isEnglish;
+
+  const NewsTickerSlideShow({
+    Key? key,
+    required this.tickers,
+    this.isEnglish = true,
+  }) : super(key: key);
+
+  Widget _buildGlassmorphicContainer(Widget child) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> slides =
+        tickers.isNotEmpty
+            ? tickers
+                .take(5)
+                .map((ticker) => _buildTickerSlide(ticker, context))
+                .toList()
+            : [_buildPlaceholderSlide()];
+
+    return SlideShowCard(slides: slides);
+  }
+
+  Widget _buildTickerSlide(NewsTicker ticker, BuildContext context) {
+    return Stack(
+      children: [
+        // Ticker image or fallback
+        Positioned.fill(
+          child:
+              ticker.imageUrl != null && ticker.imageUrl!.isNotEmpty
+                  ? Image.network(
+                    ticker.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value:
+                              loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                        ),
+                      );
+                    },
+                  )
+                  : _buildFallbackImage(),
+        ),
+        // Headline with glassmorphism at the top
+        Positioned(
+          top: 16,
+          left: 16,
+          right: 16,
+          child: _buildGlassmorphicContainer(
+            Text(
+              ticker.getDisplayText(isEnglish),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        // Source info at the bottom
+        Positioned(
+          bottom: 16,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (ticker.sourceArticle?.source?.name != null)
+                _buildGlassmorphicContainer(
+                  Text(
+                    ticker.sourceArticle!.source!.name!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Team logo if available
+        if (ticker.team?.teamId != null)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Image.asset(
+              'assets/logos/${ticker.team!.teamId!.toLowerCase()}.png',
+              height: 40,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPlaceholderSlide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: _buildFallbackImage()),
+        Container(
+          padding: const EdgeInsets.all(12.0),
+          color: Colors.black.withOpacity(0.7),
+          child: Text(
+            isEnglish ? 'Latest NFL Updates' : 'Aktuelle NFL Updates',
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 16,

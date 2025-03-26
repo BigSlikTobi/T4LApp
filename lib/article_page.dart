@@ -57,19 +57,6 @@ class _ArticlePageState extends State<ArticlePage> {
     );
   }
 
-  Widget _buildFallbackImage(ThemeData theme) {
-    return Container(
-      color: theme.colorScheme.surface,
-      child: Center(
-        child: Icon(
-          Icons.broken_image,
-          color: theme.colorScheme.onSurface.withOpacity(0.5),
-          size: 48,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
