@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:app/models/article.dart';
 import 'package:app/models/news_ticker.dart';
+import 'package:app/ticker_slideshow_page.dart';
 
 class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
   final Duration autoplayInterval;
+  final VoidCallback? onTap;
 
   const SlideShowCard({
-    Key? key,
+    super.key,
     required this.slides,
-    this.autoplayInterval = const Duration(seconds: 5),
-  }) : super(key: key);
+    this.autoplayInterval = const Duration(seconds: 10),
+    this.onTap,
+  });
 
   @override
   State<SlideShowCard> createState() => _SlideShowCardState();
@@ -56,117 +59,125 @@ class _SlideShowCardState extends State<SlideShowCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Card(
-          elevation: 2,
-          // Increase bottom margin significantly to provide more spacing for the cards underneath
-          margin: const EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final double goldenRatio = 1.618;
-                    final double slideHeight =
-                        constraints.maxWidth / goldenRatio;
-
-                    return SizedBox(
-                      height: slideHeight.clamp(180.0, 300.0),
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: widget.slides.length,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentPage = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          return widget.slides[index];
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // Page indicator dots
-              if (widget.slides.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(
-                    top: 8.0,
-                    left: 8.0,
-                    right: 8.0,
-                    bottom: 16.0,
+    return InkWell(
+      onTap: widget.onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Card(
+            elevation: 2,
+            // Increase bottom margin significantly to provide more spacing for the cards underneath
+            margin: const EdgeInsets.only(
+              top: 8,
+              left: 8,
+              right: 8,
+              bottom: 56,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(widget.slides.length, (index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color:
-                              index == _currentPage
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.grey.shade300,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double goldenRatio = 1.618;
+                      final double slideHeight =
+                          constraints.maxWidth / goldenRatio;
+
+                      return SizedBox(
+                        height: slideHeight.clamp(180.0, 300.0),
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: widget.slides.length,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentPage = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            return widget.slides[index];
+                          },
                         ),
                       );
-                    }),
+                    },
                   ),
                 ),
-            ],
-          ),
-        ),
 
-        // NoHuddle image positioned in front of the card
-        Positioned(
-          // Move the image up further to create more overlap with the slider
-          bottom: 35,
-          left: 50,
-          right: 50,
-          child: Center(
-            child: Container(
-              height: 59,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    spreadRadius: 0,
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                // Page indicator dots
+                if (widget.slides.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: 8.0,
+                      left: 8.0,
+                      right: 8.0,
+                      bottom: 16.0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(widget.slides.length, (index) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color:
+                                index == _currentPage
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade300,
+                          ),
+                        );
+                      }),
+                    ),
                   ),
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    spreadRadius: -2,
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+              ],
+            ),
+          ),
+
+          // NoHuddle image positioned in front of the card
+          Positioned(
+            // Move the image up further to create more overlap with the slider
+            bottom: 35,
+            left: 50,
+            right: 50,
+            child: Center(
+              child: Container(
+                height: 59,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.25),
+                      spreadRadius: 0,
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      spreadRadius: -2,
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/noHuddleCrop.jpg',
+                    height: 50,
+                    fit: BoxFit.contain,
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/noHuddleCrop.jpg',
-                  height: 50,
-                  fit: BoxFit.contain,
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -174,8 +185,7 @@ class _SlideShowCardState extends State<SlideShowCard> {
 class QuickNewsSlideShow extends StatelessWidget {
   final List<Article> articles;
 
-  const QuickNewsSlideShow({Key? key, required this.articles})
-    : super(key: key);
+  const QuickNewsSlideShow({super.key, required this.articles});
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +296,7 @@ class QuickNewsSlideShow extends StatelessWidget {
     return Image.asset(
       'assets/images/noHuddle.jpg',
       fit: BoxFit.cover,
+      alignment: Alignment.topCenter, // Align from top
       errorBuilder: (context, error, stackTrace) {
         return Container(
           color: Colors.grey[300],
@@ -307,10 +318,10 @@ class NewsTickerSlideShow extends StatelessWidget {
   final bool isEnglish;
 
   const NewsTickerSlideShow({
-    Key? key,
+    super.key,
     required this.tickers,
     this.isEnglish = true,
-  }) : super(key: key);
+  });
 
   Widget _buildGlassmorphicContainer(Widget child) {
     return ClipRRect(
@@ -340,7 +351,19 @@ class NewsTickerSlideShow extends StatelessWidget {
                 .toList()
             : [_buildPlaceholderSlide()];
 
-    return SlideShowCard(slides: slides);
+    return SlideShowCard(
+      slides: slides,
+      onTap:
+          tickers.isNotEmpty
+              ? () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => TickerSlideshowPage(tickers: tickers),
+                  ),
+                );
+              }
+              : null,
+    );
   }
 
   Widget _buildTickerSlide(NewsTicker ticker, BuildContext context) {
@@ -353,6 +376,7 @@ class NewsTickerSlideShow extends StatelessWidget {
                   ? Image.network(
                     ticker.imageUrl!,
                     fit: BoxFit.cover,
+                    alignment: Alignment.topCenter, // Align from top
                     errorBuilder: (_, __, ___) => _buildFallbackImage(),
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
@@ -459,6 +483,7 @@ class NewsTickerSlideShow extends StatelessWidget {
     return Image.asset(
       'assets/images/noHuddle.jpg',
       fit: BoxFit.cover,
+      alignment: Alignment.topCenter, // Align from top
       errorBuilder: (context, error, stackTrace) {
         return Container(
           color: Colors.grey[300],
