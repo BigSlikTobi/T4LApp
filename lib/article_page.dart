@@ -172,21 +172,6 @@ class _ArticlePageState extends State<ArticlePage> {
                         vertical: screenSize.height * 0.015,
                         horizontal: isWeb ? 24.0 : screenSize.width * 0.04,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                'assets/images/noHuddleCrop.jpg',
-                                height: 40,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                     // Main content card
                     Card(
