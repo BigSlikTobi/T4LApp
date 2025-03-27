@@ -92,6 +92,7 @@ class ModernNewsCard extends StatelessWidget {
                                                     .cumulativeBytesLoaded /
                                                 loadingProgress
                                                     .expectedTotalBytes!
+                                                    .toDouble()
                                             : null,
                                     color: theme.colorScheme.primary,
                                   ),
@@ -168,7 +169,7 @@ class ModernNewsCard extends StatelessWidget {
                               ),
                             Expanded(
                               child: Text(
-                                headline ?? '',
+                                headline,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   height: 1.3,

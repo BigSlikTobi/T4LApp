@@ -583,8 +583,9 @@ class _NewsState extends State<News> {
                                       showArchived
                                           ? articles.length
                                           : articles.where((article) {
-                                            if (article.createdAt == null)
+                                            if (article.createdAt == null) {
                                               return false;
+                                            }
                                             final cutoffDate = DateTime.now()
                                                 .subtract(
                                                   const Duration(hours: 36),
@@ -605,8 +606,9 @@ class _NewsState extends State<News> {
                                         showArchived
                                             ? articles
                                             : articles.where((article) {
-                                              if (article.createdAt == null)
+                                              if (article.createdAt == null) {
                                                 return false;
+                                              }
                                               final cutoffDate = DateTime.now()
                                                   .subtract(
                                                     const Duration(hours: 36),
