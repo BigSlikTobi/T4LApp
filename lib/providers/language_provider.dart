@@ -5,7 +5,6 @@ import 'dart:convert';
 
 class LanguageProvider extends ChangeNotifier {
   static const String _prefsKey = 'app_language';
-  static const String _encodingKey = 'text_encoding';
 
   // Supported languages
   static const String english = 'en';

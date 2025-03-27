@@ -195,7 +195,7 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          AppLogger.debug('Starting news tickers fetch...');
+          //AppLogger.debug('Starting news tickers fetch...');
 
           // Build the URI with team query parameter if provided
           final uri = Uri.parse(
@@ -206,13 +206,17 @@ class SupabaseService {
           Map<String, String> queryParams = {};
           if (team?.isNotEmpty == true) {
             queryParams['teamId'] = team!.toUpperCase();
-            AppLogger.debug(
-              'Added team filter for news tickers: ${team.toUpperCase()}',
-            );
+            //AppLogger.debug(
+            //  'Added team filter for news tickers: ${team.toUpperCase()}',
+            //);
           }
 
+          // Add parameter to indicate we're using the new headline fields
+          queryParams['useNewHeadlineFields'] = 'true';
+          //AppLogger.debug('Added useNewHeadlineFields flag to API request');
+
           final filteredUri = uri.replace(queryParameters: queryParams);
-          AppLogger.debug('Making request to: $filteredUri');
+          //AppLogger.debug('Making request to: $filteredUri');
 
           final response = await client
               .get(
@@ -224,10 +228,10 @@ class SupabaseService {
               )
               .timeout(const Duration(seconds: 10));
 
-          AppLogger.debug(
-            'News tickers response status: ${response.statusCode}',
-          );
-          AppLogger.debug('News tickers response headers: ${response.headers}');
+          //AppLogger.debug(
+          //  'News tickers response status: ${response.statusCode}',
+          //);
+          //AppLogger.debug('News tickers response headers: ${response.headers}');
 
           if (response.statusCode == 200) {
             final String rawResponse = response.body;
@@ -254,11 +258,11 @@ class SupabaseService {
               );
             }
 
-            AppLogger.debug('Parsed ${jsonData.length} news tickers from JSON');
+            //AppLogger.debug('Parsed ${jsonData.length} news tickers from JSON');
 
             // Log each ticker for debugging
-            for (var ticker in jsonData) {
-              AppLogger.debug('Processing ticker: ${ticker.toString()}');
+            for (var _ in jsonData) {
+              //AppLogger.debug('Processing ticker: ${ticker.toString()}');
             }
 
             final tickers =
@@ -271,9 +275,9 @@ class SupabaseService {
                   }
                 }).toList();
 
-            AppLogger.debug(
-              'Successfully created ${tickers.length} NewsTicker objects',
-            );
+            //AppLogger.debug(
+            //  'Successfully created ${tickers.length} NewsTicker objects',
+            //);
             return tickers;
           } else {
             AppLogger.error(

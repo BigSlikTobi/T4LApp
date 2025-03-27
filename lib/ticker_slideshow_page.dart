@@ -9,8 +9,7 @@ import 'package:app/utils/logger.dart';
 class TickerSlideshowPage extends StatefulWidget {
   final List<NewsTicker> tickers;
 
-  const TickerSlideshowPage({Key? key, required this.tickers})
-    : super(key: key);
+  const TickerSlideshowPage({super.key, required this.tickers});
 
   @override
   State<TickerSlideshowPage> createState() => _TickerSlideshowPageState();
@@ -23,12 +22,39 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   @override
   void initState() {
     super.initState();
-    // Sort tickers by publishedAt date (newest first)
+    // Sort tickers by created_at or publishedAt date (newest first)
     widget.tickers.sort((a, b) {
-      final aDate = DateTime.tryParse(a.sourceArticle?.publishedAt ?? '');
-      final bDate = DateTime.tryParse(b.sourceArticle?.publishedAt ?? '');
-      if (aDate == null || bDate == null) return 0;
-      return bDate.compareTo(aDate); // newest first
+      // Try created_at first
+      final aCreatedDate = DateTime.tryParse(a.createdAt ?? '');
+      final bCreatedDate = DateTime.tryParse(b.createdAt ?? '');
+
+      // If both have created_at dates, compare them
+      if (aCreatedDate != null && bCreatedDate != null) {
+        return bCreatedDate.compareTo(aCreatedDate); // newest first
+      }
+
+      // Fall back to publishedAt if created_at is not available
+      final aPublishedDate = DateTime.tryParse(
+        a.sourceArticle?.publishedAt ?? '',
+      );
+      final bPublishedDate = DateTime.tryParse(
+        b.sourceArticle?.publishedAt ?? '',
+      );
+
+      // If both have published dates, compare them
+      if (aPublishedDate != null && bPublishedDate != null) {
+        return bPublishedDate.compareTo(aPublishedDate); // newest first
+      }
+
+      // If only one has a created_at date, prioritize it
+      if (aCreatedDate != null) return -1; // a comes first
+      if (bCreatedDate != null) return 1; // b comes first
+
+      // If only one has a published date, prioritize it
+      if (aPublishedDate != null) return -1; // a comes first
+      if (bPublishedDate != null) return 1; // b comes first
+
+      return 0; // no valid dates to compare
     });
 
     _pageController = PageController(initialPage: 0);
@@ -45,8 +71,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   }
 
   String _formatDate(String? dateString, bool isEnglish) {
-    if (dateString == null || dateString.isEmpty)
+    if (dateString == null || dateString.isEmpty) {
       return isEnglish ? 'No date' : 'Kein Datum';
+    }
 
     try {
       final date = DateTime.parse(dateString);
@@ -188,20 +215,26 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   Widget _buildSlide(NewsTicker ticker, bool isEnglish, ThemeData theme) {
     final displayContent =
         isEnglish ? ticker.englishInformation : ticker.germanInformation;
-    final headlineText =
-        ticker.headline ??
-        (isEnglish ? ticker.englishInformation : ticker.germanInformation) ??
-        '';
+
+    // Use getDisplayText to get the appropriate headline based on language
+    final headlineText = ticker.getDisplayText(isEnglish);
+
     final sourceName = ticker.sourceArticle?.source?.name;
-    final dateString = _formatDate(
+
+    // Format both dates
+    final createdDate = _formatDate(ticker.createdAt, isEnglish);
+    final publishedDate = _formatDate(
       ticker.sourceArticle?.publishedAt,
       isEnglish,
     );
+
     final isWeb = MediaQuery.of(context).size.width > 600;
 
-    // Log for debugging
+    // Add more detailed logging
     AppLogger.debug(
-      'Building slide for ticker: ${ticker.id} with headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
+      'Building slide for ticker ${ticker.id}: ' +
+          (isEnglish ? 'English' : 'German') +
+          ' headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
     );
 
     return LayoutBuilder(
@@ -305,28 +338,43 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                       child: Column(
                         children: [
                           // Date and source row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  dateString,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '${isEnglish ? 'Created' : 'Erstellt'}: $createdDate',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(color: Colors.grey[600]),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (sourceName != null &&
+                                      sourceName.isNotEmpty)
+                                    Flexible(
+                                      child: Text(
+                                        sourceName,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.end,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (ticker.sourceArticle?.publishedAt != null)
+                                Text(
+                                  '${isEnglish ? 'Published' : 'Veröffentlicht'}: $publishedDate',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey[600],
                                   ),
                                   overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (sourceName != null && sourceName.isNotEmpty)
-                                Flexible(
-                                  child: Text(
-                                    sourceName,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.end,
-                                  ),
                                 ),
                             ],
                           ),
