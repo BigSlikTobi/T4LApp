@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:app/models/team.dart';
 import 'package:app/services/supabase_service.dart';
+import 'package:app/screens/team_details_page.dart';
 
 class TeamsPage extends StatefulWidget {
   const TeamsPage({Key? key}) : super(key: key);
@@ -95,7 +96,12 @@ class _TeamsPageState extends State<TeamsPage>
       margin: const EdgeInsets.all(4.0),
       child: InkWell(
         onTap: () {
-          // Navigate to team detail page when implemented
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TeamDetailsPage(team: team),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(8.0),
