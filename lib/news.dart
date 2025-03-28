@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:app/models/article.dart';
-import 'package:app/models/news_ticker.dart';
+import 'package:app/models/news_ticker.dart'
+    hide Team; // Hide Team from news_ticker
+import 'package:app/models/team.dart';
 import 'package:app/services/supabase_service.dart';
 import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
@@ -10,177 +12,42 @@ import 'modern_news_card.dart';
 import 'article_page.dart';
 import 'slideshow_card.dart';
 
-// Simulated Team info (as in your teamMapping)
-class TeamInfo {
-  final String id;
-  final String fullName;
-  final String logo; // URL for the team logo
-
-  TeamInfo({required this.id, required this.fullName, required this.logo});
-}
-
-// Dummy team mapping for demo purposes
-final Map<String, TeamInfo> teamMapping = {
-  'ARI': TeamInfo(
-    id: 'ARI',
-    fullName: 'Arizona Cardinals',
-    logo: '/logos/arizona_cardinals.png',
-  ),
-  'ATL': TeamInfo(
-    id: 'ATL',
-    fullName: 'Atlanta Falcons',
-    logo: '/logos/atlanta_falcons.png',
-  ),
-  'BAL': TeamInfo(
-    id: 'BAL',
-    fullName: 'Baltimore Ravens',
-    logo: '/logos/baltimore_ravens.png',
-  ),
-  'BUF': TeamInfo(
-    id: 'BUF',
-    fullName: 'Buffalo Bills',
-    logo: '/logos/buffalo_bills.png',
-  ),
-  'CAR': TeamInfo(
-    id: 'CAR',
-    fullName: 'Carolina Panthers',
-    logo: '/logos/carolina_panthers.png',
-  ),
-  'CHI': TeamInfo(
-    id: 'CHI',
-    fullName: 'Chicago Bears',
-    logo: '/logos/chicago_bears.png',
-  ),
-  'CIN': TeamInfo(
-    id: 'CIN',
-    fullName: 'Cincinnati Bengals',
-    logo: '/logos/cincinnati_bengals.png',
-  ),
-  'CLE': TeamInfo(
-    id: 'CLE',
-    fullName: 'Cleveland Browns',
-    logo: '/logos/cleveland_browns.png',
-  ),
-  'DAL': TeamInfo(
-    id: 'DAL',
-    fullName: 'Dallas Cowboys',
-    logo: '/logos/dallas_cowboys.png',
-  ),
-  'DEN': TeamInfo(
-    id: 'DEN',
-    fullName: 'Denver Broncos',
-    logo: '/logos/denver_broncos.png',
-  ),
-  'DET': TeamInfo(
-    id: 'DET',
-    fullName: 'Detroit Lions',
-    logo: '/logos/detroit_lions.png',
-  ),
-  'GB': TeamInfo(
-    id: 'GB',
-    fullName: 'Green Bay Packers',
-    logo: '/logos/Green_bay_packers.png',
-  ),
-  'HOU': TeamInfo(
-    id: 'HOU',
-    fullName: 'Houston Texans',
-    logo: '/logos/houston_texans.png',
-  ),
-  'IND': TeamInfo(
-    id: 'IND',
-    fullName: 'Indianapolis Colts',
-    logo: '/logos/indianapolis_colts.png',
-  ),
-  'JAX': TeamInfo(
-    id: 'JAX',
-    fullName: 'Jacksonville Jaguars',
-    logo: '/logos/jacksonville_jaguars.png',
-  ),
-  'KC': TeamInfo(
-    id: 'KC',
-    fullName: 'Kansas City Chiefs',
-    logo: '/logos/kansas_city_chiefs.png',
-  ),
-  'LV': TeamInfo(
-    id: 'LV',
-    fullName: 'Las Vegas Raiders',
-    logo: '/logos/las_vegas_raiders.png',
-  ),
-  'LAC': TeamInfo(
-    id: 'LAC',
-    fullName: 'Los Angeles Chargers',
-    logo: '/logos/los_angeles_chargers.png',
-  ),
-  'LAR': TeamInfo(
-    id: 'LAR',
-    fullName: 'Los Angeles Rams',
-    logo: '/logos/los_angeles_rams.png',
-  ),
-  'MIA': TeamInfo(
-    id: 'MIA',
-    fullName: 'Miami Dolphins',
-    logo: '/logos/miami_dolphins.png',
-  ),
-  'MIN': TeamInfo(
-    id: 'MIN',
-    fullName: 'Minnesota Vikings',
-    logo: '/logos/minnesota_vikings.png',
-  ),
-  'NE': TeamInfo(
-    id: 'NE',
-    fullName: 'New England Patriots',
-    logo: '/logos/new_england_patriots.png',
-  ),
-  'NO': TeamInfo(
-    id: 'NO',
-    fullName: 'New Orleans Saints',
-    logo: '/logos/new_orleans_saints.png',
-  ),
-  'NYG': TeamInfo(
-    id: 'NYG',
-    fullName: 'New York Giants',
-    logo: '/logos/new_york_giants.png',
-  ),
-  'NYJ': TeamInfo(
-    id: 'NYJ',
-    fullName: 'New York Jets',
-    logo: '/logos/new_york_jets.png',
-  ),
-  'PHI': TeamInfo(
-    id: 'PHI',
-    fullName: 'Philadelphia Eagles',
-    logo: '/logos/philadelphia_eagles.png',
-  ),
-  'PIT': TeamInfo(
-    id: 'PIT',
-    fullName: 'Pittsburgh Steelers',
-    logo: '/logos/pittsbourg_steelers.png',
-  ),
-  'SF': TeamInfo(
-    id: 'SF',
-    fullName: 'San Francisco 49ers',
-    logo: '/logos/san_francisco_49ers.png',
-  ),
-  'SEA': TeamInfo(
-    id: 'SEA',
-    fullName: 'Seattle Seahawks',
-    logo: '/logos/seattle_seahawks.png',
-  ),
-  'TB': TeamInfo(
-    id: 'TB',
-    fullName: 'Tampa Bay Buccaneers',
-    logo: '/logos/tampa_bay_buccaneers.png',
-  ),
-  'TEN': TeamInfo(
-    id: 'TEN',
-    fullName: 'Tennessee Titans',
-    logo: '/logos/tennessee_titans.png',
-  ),
-  'WAS': TeamInfo(
-    id: 'WAS',
-    fullName: 'Washington Commanders',
-    logo: '/logos/washington_commanders.png',
-  ),
+// Import the team logo mapping from the Team model
+final teamLogoMap = {
+  'ARI': 'arizona_cardinals',
+  'ATL': 'atlanta_falcons',
+  'BAL': 'baltimore_ravens',
+  'BUF': 'buffalo_bills',
+  'CAR': 'carolina_panthers',
+  'CHI': 'chicago_bears',
+  'CIN': 'cincinnati_bengals',
+  'CLE': 'cleveland_browns',
+  'DAL': 'dallas_cowboys',
+  'DEN': 'denver_broncos',
+  'DET': 'detroit_lions',
+  'GB': 'Green_bay_packers',
+  'HOU': 'houston_texans',
+  'IND': 'indianapolis_colts',
+  'JAC': 'jacksonville_jaguars',
+  'JAX': 'jacksonville_jaguars',
+  'KC': 'kansas_city_chiefs',
+  'LV': 'las_vegas_raiders',
+  'LAC': 'los_angeles_chargers',
+  'LAR': 'los_angeles_rams',
+  'MIA': 'miami_dolphins',
+  'MIN': 'minnesota_vikings',
+  'NE': 'new_england_patriots',
+  'NO': 'new_orleans_saints',
+  'NYG': 'new_york_giants',
+  'NYJ': 'new_york_jets',
+  'PHI': 'philadelphia_eagles',
+  'PIT': 'pittsbourg_steelers',
+  'SF': 'san_francisco_49ers',
+  'SEA': 'seattle_seahawks',
+  'TB': 'tampa_bay_buccaneers',
+  'TEN': 'tennessee_titans',
+  'WAS': 'washington_commanders',
+  'WSH': 'washington_commanders',
 };
 
 class News extends StatefulWidget {
@@ -255,22 +122,21 @@ class _NewsState extends State<News> {
     });
 
     try {
-      // Get articles from edge function
+      // Get articles from edge function with team filter
       final articlesData = await SupabaseService.getArticles(
-        team: selectedTeamId,
+        team: selectedTeamId?.toUpperCase(), // Ensure team ID is uppercase
         archived: showArchived,
       );
 
       AppLogger.debug('Received ${articlesData.length} articles from service');
+      AppLogger.debug('Filtering for team: ${selectedTeamId ?? "all teams"}');
 
-      // Map the JSON data to Article objects
-      final List<Article> fetchedArticles =
-          articlesData.map((articleJson) {
-            AppLogger.debug(
-              'Processing article with teamId: ${articleJson['teamId']}',
-            );
-            return Article.fromJson(articleJson);
-          }).toList();
+      // Map the JSON data to Article objects and filter by team if selected
+      final List<Article> fetchedArticles = articlesData
+          .map((articleJson) => Article.fromJson(articleJson))
+          .where((article) => selectedTeamId == null || 
+                article.teamId?.toUpperCase() == selectedTeamId?.toUpperCase())
+          .toList();
 
       // Sort by date
       fetchedArticles.sort(
@@ -283,7 +149,7 @@ class _NewsState extends State<News> {
       AppLogger.debug('Filtered articles count: ${fetchedArticles.length}');
       if (selectedTeamId != null) {
         AppLogger.debug(
-          'Articles for team $selectedTeamId: ${fetchedArticles.where((a) => a.teamId == selectedTeamId).length}',
+          'Articles for team $selectedTeamId: ${fetchedArticles.length}',
         );
       }
 
@@ -367,13 +233,24 @@ class _NewsState extends State<News> {
 
   @override
   Widget build(BuildContext context) {
-    List<TeamInfo> allTeams = teamMapping.values.toList();
-    allTeams.sort((a, b) => a.fullName.compareTo(b.fullName));
-    final theme = Theme.of(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isEnglish =
         languageProvider.currentLanguage == LanguageProvider.english;
     final isWeb = MediaQuery.of(context).size.width > 600;
+
+    // Get team data for dropdown
+    final allTeams =
+        teamLogoMap.entries
+            .map(
+              (entry) => Team(
+                teamId: entry.key,
+                fullName: '', // Not needed for logo display
+                division: '',
+                conference: '',
+              ),
+            )
+            .toList();
+    allTeams.sort((a, b) => a.teamId.compareTo(b.teamId));
 
     return Scaffold(
       body: Center(
@@ -389,10 +266,8 @@ class _NewsState extends State<News> {
                 child: Row(
                   children: [
                     Spacer(),
-                    // Custom dropdown-like widget for team selection
                     GestureDetector(
                       onTap: () {
-                        // Show custom dialog with team logos
                         showDialog(
                           context: context,
                           builder: (BuildContext context) {
@@ -408,51 +283,53 @@ class _NewsState extends State<News> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // All Teams option (NFL logo)
                                       InkWell(
                                         onTap: () {
                                           setState(() {
-                                            selectedTeamId =
-                                                null; // Use null instead of empty string
+                                            selectedTeamId = null;
                                           });
                                           _refreshArticles();
                                           Navigator.pop(context);
                                         },
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Image.asset(
-                                            'assets/logos/nfl.png',
-                                            height: 35,
+                                        child: Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Image.asset(
+                                              'assets/logos/nfl.png',
+                                              height: 40,
+                                              fit: BoxFit.contain,
+                                            ),
                                           ),
                                         ),
                                       ),
                                       Divider(height: 1),
-                                      // Individual team logos
                                       ...allTeams.map(
                                         (team) => InkWell(
                                           onTap: () {
                                             setState(() {
-                                              selectedTeamId =
-                                                  team.id.toUpperCase();
+                                              selectedTeamId = team.teamId;
                                             });
                                             _refreshArticles();
                                             Navigator.pop(context);
                                           },
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Image.asset(
-                                              'assets/${team.logo}',
-                                              height: 35,
-                                              errorBuilder: (
-                                                context,
-                                                error,
-                                                stackTrace,
-                                              ) {
-                                                return Image.asset(
-                                                  'assets/images/placeholder.jpeg',
-                                                  height: 35,
-                                                );
-                                              },
+                                          child: Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(8.0),
+                                              child: Image.asset(
+                                                team.logoPath,
+                                                height: 40,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) {
+                                                  return Image.asset(
+                                                    'assets/images/placeholder.jpeg',
+                                                    height: 40,
+                                                  );
+                                                },
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -467,30 +344,40 @@ class _NewsState extends State<News> {
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 12.0,
+                          vertical: 10.0,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: theme.colorScheme.primary),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(Icons.filter_list),
-                            const SizedBox(width: 8),
-                            Image.asset(
-                              selectedTeamId == null
-                                  ? 'assets/logos/nfl.png'
-                                  : 'assets/${teamMapping[selectedTeamId]!.logo}',
-                              height: 30,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/placeholder.jpeg',
-                                  height: 30,
-                                );
-                              },
+                            Center(
+                              child: Image.asset(
+                                selectedTeamId == null
+                                    ? 'assets/logos/nfl.png'
+                                    : Team(
+                                        teamId: selectedTeamId!,
+                                        fullName: '',
+                                        division: '',
+                                        conference: '',
+                                      ).logoPath,
+                                height: 40,
+                                fit: BoxFit.contain,
+                              ),
                             ),
+                            SizedBox(width: 12),
                             Icon(Icons.arrow_drop_down),
                           ],
                         ),
@@ -508,7 +395,7 @@ class _NewsState extends State<News> {
                       // Show a progress indicator while loading
                       return Center(
                         child: CircularProgressIndicator(
-                          color: theme.colorScheme.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       );
                     } else if (errorMessage != null) {
@@ -519,16 +406,16 @@ class _NewsState extends State<News> {
                           children: [
                             Text(
                               errorMessage!,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.red,
-                              ),
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(color: Colors.red),
                               textAlign: TextAlign.center,
                             ),
                             SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _refreshArticles,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
                               ),
                               child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
                             ),
@@ -545,13 +432,14 @@ class _NewsState extends State<News> {
                               isEnglish
                                   ? 'Error loading articles: ${snapshot.error}'
                                   : 'Fehler beim Laden der Artikel: ${snapshot.error}',
-                              style: theme.textTheme.bodyLarge,
+                              style: Theme.of(context).textTheme.bodyLarge,
                             ),
                             SizedBox(height: 16),
                             ElevatedButton(
                               onPressed: _refreshArticles,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
                               ),
                               child: Text(isEnglish ? 'Retry' : 'Wiederholen'),
                             ),
@@ -579,44 +467,29 @@ class _NewsState extends State<News> {
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: NeverScrollableScrollPhysics(),
-                                  itemCount:
-                                      showArchived
-                                          ? articles.length
-                                          : articles.where((article) {
-                                            if (article.createdAt == null) {
-                                              return false;
-                                            }
-                                            final cutoffDate = DateTime.now()
-                                                .subtract(
-                                                  const Duration(hours: 36),
-                                                );
-                                            return article.createdAt!.isAfter(
-                                              cutoffDate,
-                                            );
-                                          }).length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithMaxCrossAxisExtent(
-                                        maxCrossAxisExtent: isWeb ? 600 : 600,
-                                        mainAxisExtent: 120,
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 16,
-                                      ),
+                                  itemCount: showArchived 
+                                      ? articles.length 
+                                      : articles.where((article) {
+                                          // First filter by date
+                                          if (article.createdAt == null) return false;
+                                          final cutoffDate = DateTime.now().subtract(const Duration(hours: 36));
+                                          return article.createdAt!.isAfter(cutoffDate);
+                                        }).length,
+                                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: isWeb ? 600 : 600,
+                                    mainAxisExtent: 120,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                  ),
                                   itemBuilder: (context, index) {
-                                    final displayedArticles =
-                                        showArchived
-                                            ? articles
-                                            : articles.where((article) {
-                                              if (article.createdAt == null) {
-                                                return false;
-                                              }
-                                              final cutoffDate = DateTime.now()
-                                                  .subtract(
-                                                    const Duration(hours: 36),
-                                                  );
-                                              return article.createdAt!.isAfter(
-                                                cutoffDate,
-                                              );
-                                            }).toList();
+                                    final displayedArticles = showArchived
+                                        ? articles
+                                        : articles.where((article) {
+                                            if (article.createdAt == null) return false;
+                                            final cutoffDate = DateTime.now().subtract(const Duration(hours: 36));
+                                            return article.createdAt!.isAfter(cutoffDate);
+                                          }).toList();
+
                                     return ModernNewsCard(
                                       article: displayedArticles[index],
                                       onArticleClick: _onArticleClick,
@@ -645,10 +518,14 @@ class _NewsState extends State<News> {
                                           : (isEnglish
                                               ? "Load Older Articles..."
                                               : "Ältere Artikel laden..."),
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(
-                                            color: theme.colorScheme.primary,
-                                          ),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge?.copyWith(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -660,18 +537,20 @@ class _NewsState extends State<News> {
                     } else {
                       // If no articles are available.
                       String noNewsText =
-                          selectedTeamId != null
-                              ? (isEnglish
-                                  ? 'No news available for ${teamMapping[selectedTeamId]?.fullName ?? ''}'
-                                  : 'Keine Nachrichten verfügbar für ${teamMapping[selectedTeamId]?.fullName ?? ''}')
-                              : (isEnglish
-                                  ? 'No news available'
-                                  : 'Keine Nachrichten verfügbar');
+                          isEnglish
+                              ? 'No news available${selectedTeamId != null ? " for ${selectedTeamId}" : ""}'
+                              : 'Keine Nachrichten verfügbar${selectedTeamId != null ? " für ${selectedTeamId}" : ""}';
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(noNewsText, style: theme.textTheme.bodyLarge),
+                            Text(
+                              noNewsText,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
                             if (!showArchived)
                               TextButton(
                                 onPressed: () {
@@ -684,8 +563,11 @@ class _NewsState extends State<News> {
                                   isEnglish
                                       ? "Load Older Articles..."
                                       : "Ältere Artikel laden...",
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    color: theme.colorScheme.primary,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
