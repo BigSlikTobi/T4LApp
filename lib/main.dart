@@ -53,7 +53,12 @@ class MyApp extends StatelessWidget {
 
         // AppBar theme
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.black.withOpacity(0.7),
+          backgroundColor: Colors.black.withValues(
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 0.7 * 255,
+          ),
           elevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
@@ -113,7 +118,12 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Noto Sans',
 
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.black.withOpacity(0.8),
+          backgroundColor: Colors.black.withValues(
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 0.8 * 255,
+          ),
           elevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
@@ -226,7 +236,12 @@ class _GlassmorphicHomeState extends State<GlassmorphicHome> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(
+                              red: 0,
+                              green: 0,
+                              blue: 0,
+                              alpha: 0.2 * 255,
+                            ),
                             spreadRadius: 1,
                             blurRadius: 3,
                             offset: Offset(0, 1),

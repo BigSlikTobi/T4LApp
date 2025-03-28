@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:app/models/article.dart';
 import 'package:app/models/news_ticker.dart';
 import 'package:app/ticker_slideshow_page.dart';
+import 'package:app/utils/logger.dart';
 
 class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
@@ -517,14 +518,14 @@ class NewsTickerSlideShow extends StatelessWidget {
             : [_buildPlaceholderSlide()];
 
     // Log the number of tickers being displayed
-    print(
+    AppLogger.debug(
       'Displaying ${tickers.length} tickers in NewsTickerSlideShow, isEnglish: $isEnglish',
     );
     if (tickers.isNotEmpty) {
-      print(
+      AppLogger.debug(
         'First ticker headline: ${tickers.first.getDisplayText(isEnglish)}',
       );
-      print(
+      AppLogger.debug(
         'Language specific fields - English: ${tickers.first.headlineEnglish}, German: ${tickers.first.headlineGerman}',
       );
     }
@@ -536,7 +537,7 @@ class NewsTickerSlideShow extends StatelessWidget {
           onTap:
               tickers.isNotEmpty
                   ? () {
-                    print(
+                    AppLogger.debug(
                       'NewsTickerSlideShow card tapped - navigating to TickerSlideshowPage',
                     );
                     Navigator.of(context).push(

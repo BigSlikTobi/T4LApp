@@ -23,7 +23,8 @@ class LanguageProvider extends ChangeNotifier {
 
   // Get device language and set initial language
   String _getDeviceLanguage() {
-    final deviceLocale = ui.window.locale.languageCode.toLowerCase();
+    final deviceLocale =
+        ui.PlatformDispatcher.instance.locale.languageCode.toLowerCase();
     return deviceLocale == german ? german : english;
   }
 

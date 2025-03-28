@@ -6,10 +6,10 @@ class Navbar extends StatefulWidget {
   const Navbar({super.key, this.onIndexChanged});
 
   @override
-  _NavbarState createState() => _NavbarState();
+  NavbarState createState() => NavbarState();
 }
 
-class _NavbarState extends State<Navbar> {
+class NavbarState extends State<Navbar> {
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -26,18 +26,24 @@ class _NavbarState extends State<Navbar> {
         filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withAlpha(204), // equivalent to 0.8 opacity
             border: Border(
               top: BorderSide(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withAlpha(51), // equivalent to 0.2 opacity
                 width: 0.5,
               ),
             ),
           ),
           child: BottomNavigationBar(
             items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: 'News'),
-              BottomNavigationBarItem(icon: Icon(Icons.sports), label: 'Drills'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.newspaper),
+                label: 'News',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.sports),
+                label: 'Drills',
+              ),
               BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
               BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_today),
