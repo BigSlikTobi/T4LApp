@@ -4,7 +4,7 @@ import 'package:app/models/article.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:app/utils/logger.dart';
-import 'package:app/news.dart'; // Import for teamMapping
+import 'package:app/models/team.dart'; // Import for Team model
 
 class ModernNewsCard extends StatelessWidget {
   final Article article;
@@ -134,55 +134,60 @@ class ModernNewsCard extends StatelessWidget {
                       flex: isWeb ? 4 : 2,
                       child: Padding(
                         padding: EdgeInsets.all(isWeb ? 20.0 : 8.0),
-                        child: Column(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (article.teamId != null)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: SizedBox(
-                                  height: 16,
-                                  child: Builder(
-                                    builder: (context) {
-                                      final teamId =
-                                          article.teamId!.toUpperCase();
-                                      if (!teamMapping.containsKey(teamId)) {
-                                        AppLogger.error(
-                                          'No team mapping found for teamId: $teamId',
-                                        );
-                                        return const SizedBox.shrink();
-                                      }
-                                      return Image.asset(
-                                        'assets${teamMapping[teamId]!.logo}',
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return const SizedBox.shrink();
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
+                            // Headline and date
                             Expanded(
-                              child: Text(
-                                headline,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.3,
-                                ),
-                                maxLines: isWeb ? 3 : 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              formattedDate,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      headline,
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.3,
+                                          ),
+                                      maxLines: isWeb ? 3 : 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        formattedDate,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(color: Colors.grey[600]),
+                                      ),
+                                      const Spacer(),
+                                      if (article.teamId != null)
+                                        SizedBox(
+                                          width: isWeb ? 24 : 20,
+                                          height: isWeb ? 24 : 20,
+                                          child: Image.asset(
+                                            Team(
+                                              teamId:
+                                                  article.teamId!.toUpperCase(),
+                                              fullName: '',
+                                              division: '',
+                                              conference: '',
+                                            ).logoPath,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                            ) {
+                                              return const SizedBox.shrink();
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
