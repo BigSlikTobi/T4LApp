@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/config.dart';
 import 'navbar.dart';
 import 'news.dart';
+import 'teams_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -188,12 +189,20 @@ class GlassmorphicHome extends StatefulWidget {
 }
 
 class _GlassmorphicHomeState extends State<GlassmorphicHome> {
+  int _currentIndex = 0;
+
   final List<Widget> _pages = [
     News(),
     Center(child: Text('Drills')),
-    Center(child: Text('Teams')),
+    TeamsPage(),
     Center(child: Text('Schedule')),
   ];
+
+  void _onNavigationChange(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -273,10 +282,8 @@ class _GlassmorphicHomeState extends State<GlassmorphicHome> {
           ),
         ),
       ),
-      body: SafeArea(
-        child: _pages[0], // Start with News page
-      ),
-      bottomNavigationBar: Navbar(),
+      body: SafeArea(child: _pages[_currentIndex]),
+      bottomNavigationBar: Navbar(onIndexChanged: _onNavigationChange),
     );
   }
 }
