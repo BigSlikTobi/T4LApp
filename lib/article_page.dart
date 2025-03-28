@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ArticlePage extends StatefulWidget {
   final Article article;
@@ -53,6 +54,17 @@ class _ArticlePageState extends State<ArticlePage> {
     return format.format(date);
   }
 
+  Future<void> _launchURL(String? url) async {
+    if (url == null || url.isEmpty) return;
+
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      AppLogger.error('Could not launch URL: $url');
+    }
+  }
+
   Widget _buildLoadingPlaceholder(ThemeData theme) {
     return Container(
       color: theme.colorScheme.surface,
@@ -64,7 +76,7 @@ class _ArticlePageState extends State<ArticlePage> {
 
   Widget _buildFallbackImage() {
     return Image.asset(
-      'assets/images/noHuddle.jpg',
+      'assets/images/placeholder.jpg',
       fit: BoxFit.cover,
       alignment: Alignment.topCenter,
       errorBuilder: (context, error, stackTrace) {
@@ -80,6 +92,41 @@ class _ArticlePageState extends State<ArticlePage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSourceBadge(ThemeData theme) {
+    if (widget.article.sourceAuthor == null ||
+        widget.article.sourceAuthor!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return InkWell(
+      onTap: () => _launchURL(widget.article.sourceUrl),
+      child: Container(
+        margin: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.link, size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              'Source: ${widget.article.sourceAuthor}',
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -311,6 +358,7 @@ class _ArticlePageState extends State<ArticlePage> {
                                     ),
                                   },
                                 ),
+                                _buildSourceBadge(theme),
                               ],
                             ),
                           ),
