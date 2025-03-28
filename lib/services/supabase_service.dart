@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/models/news_ticker.dart';
+import 'package:app/models/team.dart' as team_model;
 
 class SupabaseService {
   static const int _maxRetries = 3;
@@ -279,6 +280,86 @@ class SupabaseService {
             //  'Successfully created ${tickers.length} NewsTicker objects',
             //);
             return tickers;
+          } else {
+            AppLogger.error(
+              'API error ${response.statusCode}',
+              'Response body: ${response.body}\nHeaders: ${response.headers}',
+            );
+            throw Exception(
+              'API error: ${response.statusCode} - ${response.body}',
+            );
+          }
+        } finally {
+          client.close();
+        }
+      } catch (e) {
+        retryCount++;
+        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        if (retryCount >= _maxRetries) {
+          throw Exception(
+            'Failed after $_maxRetries attempts: ${e.toString()}',
+          );
+        }
+        await Future.delayed(_retryDelay * retryCount);
+      }
+    }
+    return [];
+  }
+
+  /// Fetch all teams from the edge function with retry logic
+  static Future<List<team_model.Team>> getTeams() async {
+    int retryCount = 0;
+    while (retryCount < _maxRetries) {
+      try {
+        final http.Client client = http.Client();
+        try {
+          AppLogger.debug('Starting getTeams request...');
+          
+          final uri = Uri.parse(
+            'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/teams',
+          );
+          
+          AppLogger.debug('Making request to: $uri');
+          
+          final response = await client
+              .post(
+                uri,
+                headers: {
+                  'Authorization': 'Bearer ${AppConfig.apiKey}',
+                  'Content-Type': 'application/json',
+                },
+                body: jsonEncode({"name": "Functions"}),
+              )
+              .timeout(const Duration(seconds: 10));
+          
+          AppLogger.debug('Response status code: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            AppLogger.debug('Raw API response: ${response.body}');
+            final jsonResponse = jsonDecode(response.body);
+            
+            if (jsonResponse is Map<String, dynamic> && jsonResponse.containsKey('data')) {
+              final List<dynamic> teamsData = jsonResponse['data'];
+              AppLogger.debug('Successfully parsed JSON data');
+              AppLogger.debug('Received ${teamsData.length} teams from API');
+              
+              final teams = teamsData
+                  .where((json) => json is Map<String, dynamic>)
+                  .map((json) => team_model.Team.fromJson(json as Map<String, dynamic>))
+                  .toList();
+              
+              AppLogger.debug('Successfully created ${teams.length} Team objects');
+              
+              // Log sample team data for debugging
+              if (teams.isNotEmpty) {
+                AppLogger.debug('Sample team: ${teams.first}');
+              }
+              
+              return teams;
+            } else {
+              AppLogger.error('Unexpected response format', jsonResponse);
+              throw Exception('Unexpected response format: ${jsonResponse.runtimeType}');
+            }
           } else {
             AppLogger.error(
               'API error ${response.statusCode}',
