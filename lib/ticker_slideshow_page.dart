@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:app/models/news_ticker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -232,9 +231,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
 
     // Add more detailed logging
     AppLogger.debug(
-      'Building slide for ticker ${ticker.id}: ' +
-          (isEnglish ? 'English' : 'German') +
-          ' headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
+      'Building slide for ticker ${ticker.id}: ${isEnglish ? 'English' : 'German'} headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
     );
 
     return LayoutBuilder(

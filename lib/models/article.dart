@@ -9,6 +9,7 @@ class Article {
   final String? imageUrl;
   final DateTime? createdAt;
   final String? sourceAuthor;
+  final String? sourceUrl; // Added source URL field
   final String? teamId; // Changed from team to teamId to match database
   final String? status;
 
@@ -24,6 +25,7 @@ class Article {
     this.imageUrl,
     this.createdAt,
     this.sourceAuthor,
+    this.sourceUrl, // Added source URL parameter
     this.teamId, // Changed from team to teamId
     this.status,
   });
@@ -121,6 +123,7 @@ class Article {
       imageUrl: json['Image1']?.toString(),
       createdAt: dateTime,
       sourceAuthor: json['SourceName']?.toString(),
+      sourceUrl: json['sourceUrl']?.toString(), // Added source URL from JSON
       teamId:
           teamIdValue, // Don't force uppercase here since we handle it in the service
       status: json['status']?.toString(),
@@ -137,6 +140,7 @@ class Article {
       'Image1': imageUrl,
       'created_at': createdAt?.toIso8601String(),
       'SourceName': sourceAuthor,
+      'sourceUrl': sourceUrl, // Added source URL to JSON
       'teamId': teamId,
       'status': status,
     };
