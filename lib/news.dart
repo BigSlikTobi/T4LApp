@@ -132,11 +132,16 @@ class _NewsState extends State<News> {
       AppLogger.debug('Filtering for team: ${selectedTeamId ?? "all teams"}');
 
       // Map the JSON data to Article objects and filter by team if selected
-      final List<Article> fetchedArticles = articlesData
-          .map((articleJson) => Article.fromJson(articleJson))
-          .where((article) => selectedTeamId == null || 
-                article.teamId?.toUpperCase() == selectedTeamId?.toUpperCase())
-          .toList();
+      final List<Article> fetchedArticles =
+          articlesData
+              .map((articleJson) => Article.fromJson(articleJson))
+              .where(
+                (article) =>
+                    selectedTeamId == null ||
+                    article.teamId?.toUpperCase() ==
+                        selectedTeamId?.toUpperCase(),
+              )
+              .toList();
 
       // Sort by date
       fetchedArticles.sort(
@@ -314,7 +319,9 @@ class _NewsState extends State<News> {
                                           },
                                           child: Center(
                                             child: Padding(
-                                              padding: const EdgeInsets.all(8.0),
+                                              padding: const EdgeInsets.all(
+                                                8.0,
+                                              ),
                                               child: Image.asset(
                                                 team.logoPath,
                                                 height: 40,
@@ -368,11 +375,11 @@ class _NewsState extends State<News> {
                                 selectedTeamId == null
                                     ? 'assets/logos/nfl.png'
                                     : Team(
-                                        teamId: selectedTeamId!,
-                                        fullName: '',
-                                        division: '',
-                                        conference: '',
-                                      ).logoPath,
+                                      teamId: selectedTeamId!,
+                                      fullName: '',
+                                      division: '',
+                                      conference: '',
+                                    ).logoPath,
                                 height: 40,
                                 fit: BoxFit.contain,
                               ),
@@ -467,28 +474,45 @@ class _NewsState extends State<News> {
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: NeverScrollableScrollPhysics(),
-                                  itemCount: showArchived 
-                                      ? articles.length 
-                                      : articles.where((article) {
-                                          // First filter by date
-                                          if (article.createdAt == null) return false;
-                                          final cutoffDate = DateTime.now().subtract(const Duration(hours: 36));
-                                          return article.createdAt!.isAfter(cutoffDate);
-                                        }).length,
-                                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                                    maxCrossAxisExtent: isWeb ? 600 : 600,
-                                    mainAxisExtent: 120,
-                                    crossAxisSpacing: 16,
-                                    mainAxisSpacing: 16,
-                                  ),
+                                  itemCount:
+                                      showArchived
+                                          ? articles.length
+                                          : articles.where((article) {
+                                            // First filter by date
+                                            if (article.createdAt == null) {
+                                              return false;
+                                            }
+                                            final cutoffDate = DateTime.now()
+                                                .subtract(
+                                                  const Duration(hours: 36),
+                                                );
+                                            return article.createdAt!.isAfter(
+                                              cutoffDate,
+                                            );
+                                          }).length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithMaxCrossAxisExtent(
+                                        maxCrossAxisExtent: isWeb ? 600 : 600,
+                                        mainAxisExtent: 120,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                      ),
                                   itemBuilder: (context, index) {
-                                    final displayedArticles = showArchived
-                                        ? articles
-                                        : articles.where((article) {
-                                            if (article.createdAt == null) return false;
-                                            final cutoffDate = DateTime.now().subtract(const Duration(hours: 36));
-                                            return article.createdAt!.isAfter(cutoffDate);
-                                          }).toList();
+                                    final displayedArticles =
+                                        showArchived
+                                            ? articles
+                                            : articles.where((article) {
+                                              if (article.createdAt == null) {
+                                                return false;
+                                              }
+                                              final cutoffDate = DateTime.now()
+                                                  .subtract(
+                                                    const Duration(hours: 36),
+                                                  );
+                                              return article.createdAt!.isAfter(
+                                                cutoffDate,
+                                              );
+                                            }).toList();
 
                                     return ModernNewsCard(
                                       article: displayedArticles[index],
@@ -538,8 +562,8 @@ class _NewsState extends State<News> {
                       // If no articles are available.
                       String noNewsText =
                           isEnglish
-                              ? 'No news available${selectedTeamId != null ? " for ${selectedTeamId}" : ""}'
-                              : 'Keine Nachrichten verfügbar${selectedTeamId != null ? " für ${selectedTeamId}" : ""}';
+                              ? 'No news available${selectedTeamId != null ? " for $selectedTeamId" : ""}'
+                              : 'Keine Nachrichten verfügbar${selectedTeamId != null ? " für $selectedTeamId" : ""}';
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

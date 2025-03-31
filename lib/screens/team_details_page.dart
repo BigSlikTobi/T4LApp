@@ -8,7 +8,7 @@ import 'package:app/article_page.dart';
 class TeamDetailsPage extends StatefulWidget {
   final Team team;
 
-  const TeamDetailsPage({Key? key, required this.team}) : super(key: key);
+  const TeamDetailsPage({super.key, required this.team});
 
   @override
   _TeamDetailsPageState createState() => _TeamDetailsPageState();
@@ -142,15 +142,18 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWeb = constraints.maxWidth > 600;
-        final horizontalPadding = constraints.maxWidth > 1200
-            ? (constraints.maxWidth - 1200) / 2
-            : constraints.maxWidth > 600
+        final horizontalPadding =
+            constraints.maxWidth > 1200
+                ? (constraints.maxWidth - 1200) / 2
+                : constraints.maxWidth > 600
                 ? 50.0
                 : 16.0;
 
         return Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
+            constraints: BoxConstraints(
+              maxWidth: isWeb ? 1200 : double.infinity,
+            ),
             child: ListView.builder(
               padding: EdgeInsets.symmetric(
                 horizontal: horizontalPadding,
@@ -181,11 +184,7 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
           children: [
             Hero(
               tag: 'team-logo-${widget.team.teamId}',
-              child: Image.asset(
-                widget.team.logoPath,
-                height: 32,
-                width: 32,
-              ),
+              child: Image.asset(widget.team.logoPath, height: 32, width: 32),
             ),
             const SizedBox(width: 12),
             Flexible(
@@ -199,13 +198,14 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadTeamArticles,
-        child: _isLoading
-            ? _buildLoadingState()
-            : _errorMessage != null
+        child:
+            _isLoading
+                ? _buildLoadingState()
+                : _errorMessage != null
                 ? _buildErrorState()
                 : _articles.isEmpty
-                    ? _buildEmptyState()
-                    : _buildArticlesList(),
+                ? _buildEmptyState()
+                : _buildArticlesList(),
       ),
     );
   }
