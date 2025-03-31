@@ -13,6 +13,7 @@ class SupabaseService {
   static final supabase = Supabase.instance.client;
 
   static RealtimeChannel? _articleSubscription;
+  static RealtimeChannel? _teamArticleSubscription;
 
   /// Subscribe to realtime updates for articles
   static RealtimeChannel subscribeToArticles({
@@ -42,15 +43,15 @@ class SupabaseService {
                   )
                   : null,
           callback: (payload) {
-            //AppLogger.debug(
-            //  'Realtime update received: ${payload.eventType} on ${payload.table}',
-            //);
+            AppLogger.debug(
+              'Realtime update received: ${payload.eventType} on ${payload.table}',
+            );
             if (onArticlesUpdate != null) {
               getArticles(team: team, archived: archived)
                   .then((articles) {
-                    //AppLogger.debug(
-                    //  'Fetched ${articles.length} articles after realtime update',
-                    //);
+                    AppLogger.debug(
+                      'Fetched ${articles.length} articles after realtime update',
+                    );
                     onArticlesUpdate(articles);
                   })
                   .catchError((error) {
@@ -65,17 +66,17 @@ class SupabaseService {
 
     // Subscribe with robust error handling and auto-reconnect
     channel.subscribe((status, [error]) {
-      //AppLogger.debug('Channel $channelName status: $status');
+      AppLogger.debug('Channel $channelName status: $status');
       if (error != null) {
         AppLogger.error('Subscription error on $channelName', error);
         // Attempt to reconnect on error
         Future.delayed(Duration(seconds: 5), () {
           if (_articleSubscription == channel) {
-            //AppLogger.debug('Attempting to reconnect channel: $channelName');
+            AppLogger.debug('Attempting to reconnect channel: $channelName');
             channel.subscribe((newStatus, [newError]) {
-              //AppLogger.debug(
-              //  'Reconnection status: $newStatus, error: $newError',
-              //);
+              AppLogger.debug(
+                'Reconnection status: $newStatus, error: $newError',
+              );
             });
           }
         });
@@ -83,6 +84,84 @@ class SupabaseService {
     });
 
     _articleSubscription = channel;
+    return channel;
+  }
+
+  /// Subscribe to realtime updates for team articles
+  static RealtimeChannel subscribeToTeamArticles({
+    String? team,
+    Function(List<Map<String, dynamic>>)? onTeamArticlesUpdate,
+  }) {
+    // Clean up existing subscription
+    _teamArticleSubscription?.unsubscribe();
+
+    final channelName =
+        'public:TeamNewsArticles:${DateTime.now().millisecondsSinceEpoch}';
+    AppLogger.debug(
+      'Creating new team articles subscription on channel: $channelName',
+    );
+
+    final channel = supabase
+        .channel(channelName)
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'TeamNewsArticles',
+          filter:
+              team?.isNotEmpty == true
+                  ? PostgresChangeFilter(
+                    type: PostgresChangeFilterType.eq,
+                    column: 'team',
+                    value: team!.toUpperCase(),
+                  )
+                  : null,
+          callback: (payload) {
+            AppLogger.debug(
+              'Team article realtime update received: ${payload.eventType} on ${payload.table}',
+            );
+            if (onTeamArticlesUpdate != null) {
+              getTeamArticles(teamId: team)
+                  .then((teamArticles) {
+                    AppLogger.debug(
+                      'Fetched ${teamArticles.length} team articles after realtime update',
+                    );
+                    onTeamArticlesUpdate(teamArticles);
+                  })
+                  .catchError((error) {
+                    AppLogger.error(
+                      'Error fetching team articles after realtime update',
+                      error,
+                    );
+                  });
+            }
+          },
+        );
+
+    // Subscribe with robust error handling and auto-reconnect
+    channel.subscribe((status, [error]) {
+      AppLogger.debug('Team articles channel $channelName status: $status');
+      if (error != null) {
+        AppLogger.error(
+          'Team articles subscription error on $channelName',
+          error,
+        );
+        // Attempt to reconnect on error
+        Future.delayed(Duration(seconds: 5), () {
+          if (_teamArticleSubscription == channel) {
+            AppLogger.debug(
+              'Attempting to reconnect team articles channel: $channelName',
+            );
+            channel.subscribe((newStatus, [newError]) {
+              AppLogger.debug(
+                'Team articles reconnection status: $newStatus, error: $newError',
+              );
+            });
+          }
+        });
+      }
+    });
+
+    _teamArticleSubscription = channel;
     return channel;
   }
 
@@ -392,9 +471,99 @@ class SupabaseService {
     return [];
   }
 
+  /// Fetch team articles from the edge function with retry logic
+  static Future<List<Map<String, dynamic>>> getTeamArticles({
+    String? teamId,
+  }) async {
+    int retryCount = 0;
+    while (retryCount < _maxRetries) {
+      try {
+        final http.Client client = http.Client();
+        try {
+          AppLogger.debug('Starting getTeamArticles request...');
+
+          final uri = Uri.parse(
+            'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/teamArticles',
+          );
+
+          // Add team filter if specified
+          Map<String, dynamic> requestBody = {"name": "Functions"};
+          if (teamId?.isNotEmpty == true) {
+            requestBody["team"] = teamId!.toUpperCase();
+            AppLogger.debug(
+              'Added team filter for team articles: ${teamId.toUpperCase()}',
+            );
+          }
+
+          AppLogger.debug('Making request to: $uri with body: $requestBody');
+
+          final response = await client
+              .post(
+                uri,
+                headers: {
+                  'Authorization': 'Bearer ${AppConfig.apiKey}',
+                  'Content-Type': 'application/json',
+                },
+                body: jsonEncode(requestBody),
+              )
+              .timeout(const Duration(seconds: 10));
+
+          AppLogger.debug('Response status code: ${response.statusCode}');
+
+          if (response.statusCode == 200) {
+            AppLogger.debug('Raw API response: ${response.body}');
+            final jsonResponse = jsonDecode(response.body);
+
+            List<dynamic> articlesData;
+            if (jsonResponse is Map<String, dynamic> &&
+                jsonResponse.containsKey('data')) {
+              articlesData = jsonResponse['data'];
+            } else if (jsonResponse is List) {
+              articlesData = jsonResponse;
+            } else {
+              throw Exception(
+                'Unexpected response format: ${jsonResponse.runtimeType}',
+              );
+            }
+
+            AppLogger.debug('Successfully parsed JSON data');
+            AppLogger.debug(
+              'Received ${articlesData.length} team articles from API',
+            );
+
+            return articlesData.cast<Map<String, dynamic>>();
+          } else {
+            AppLogger.error(
+              'API error ${response.statusCode}',
+              'Response body: ${response.body}\nHeaders: ${response.headers}',
+            );
+            throw Exception(
+              'API error: ${response.statusCode} - ${response.body}',
+            );
+          }
+        } finally {
+          client.close();
+        }
+      } catch (e) {
+        retryCount++;
+        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        if (retryCount >= _maxRetries) {
+          throw Exception(
+            'Failed after $_maxRetries attempts: ${e.toString()}',
+          );
+        }
+        await Future.delayed(_retryDelay * retryCount);
+      }
+    }
+    return [];
+  }
+
   /// Cleanup method to be called when the app is disposed
   static void dispose() {
     _articleSubscription?.unsubscribe();
     _articleSubscription = null;
+
+    _teamArticleSubscription?.unsubscribe();
+    _teamArticleSubscription = null;
   }
 }
