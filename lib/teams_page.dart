@@ -324,50 +324,77 @@ class _TeamsPageState extends State<TeamsPage>
   @override
   Widget build(BuildContext context) {
     final groupedTeams = _groupTeams();
+    final mediaQuery = MediaQuery.of(context);
+    final isSmallScreen = mediaQuery.size.width < 360;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NFL Teams'),
+        backgroundColor: Colors.transparent, // Make background transparent
+        elevation: 0, // Remove shadow
         centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs:
-              _conferences.map((conference) {
-                return Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/logos/${conference.toLowerCase()}.png',
-                        width: 24,
-                        height: 24,
-                        errorBuilder:
-                            (context, error, stackTrace) =>
-                                const Icon(Icons.sports_football),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(conference),
-                    ],
-                  ),
-                );
-              }).toList(),
-        ),
       ),
-      body:
-          _isLoading
-              ? _buildLoadingState()
-              : _errorMessage != null
-              ? _buildErrorState()
-              : TabBarView(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom TabBar with white background and responsive design
+            Container(
+              color: Colors.white,
+              child: TabBar(
                 controller: _tabController,
-                children:
+                labelColor: Theme.of(context).colorScheme.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Theme.of(context).colorScheme.primary,
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                tabs:
                     _conferences.map((conference) {
-                      return _buildConferenceTab(
-                        conference,
-                        groupedTeams[conference] ?? {},
+                      return Tab(
+                        height: 60,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/logos/${conference.toLowerCase()}.png',
+                              width: isSmallScreen ? 30 : 40,
+                              height: isSmallScreen ? 30 : 40,
+                              semanticLabel: '$conference Conference logo',
+                              errorBuilder:
+                                  (context, error, stackTrace) =>
+                                      const Icon(Icons.sports_football),
+                            ),
+                            SizedBox(width: isSmallScreen ? 4 : 8),
+                            Text(conference, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
                       );
                     }).toList(),
               ),
+            ),
+            // TabBarView
+            Expanded(
+              child:
+                  _isLoading
+                      ? _buildLoadingState()
+                      : _errorMessage != null
+                      ? _buildErrorState()
+                      : TabBarView(
+                        controller: _tabController,
+                        children:
+                            _conferences.map((conference) {
+                              return _buildConferenceTab(
+                                conference,
+                                groupedTeams[conference] ?? {},
+                              );
+                            }).toList(),
+                      ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
