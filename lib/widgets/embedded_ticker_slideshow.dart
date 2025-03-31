@@ -23,8 +23,8 @@ class EmbeddedTickerSlideshow extends StatefulWidget {
 
 class _EmbeddedTickerSlideshowState extends State<EmbeddedTickerSlideshow> {
   late PageController _pageController;
-  int _currentPage = 0;
-  bool _isUserInteracting = false;
+  final int _currentPage = 0;
+  final bool _isUserInteracting = false;
 
   @override
   void initState() {
