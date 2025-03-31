@@ -10,12 +10,14 @@ class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
   final Duration autoplayInterval;
   final VoidCallback? onTap;
+  final String? logoImagePath; // Added parameter for configurable logo image
 
   const SlideShowCard({
     super.key,
     required this.slides,
     this.autoplayInterval = const Duration(seconds: 10),
     this.onTap,
+    this.logoImagePath, // Optional logo path that can be passed
   });
 
   @override
@@ -147,43 +149,46 @@ class _SlideShowCardState extends State<SlideShowCard> {
               ),
             ),
 
-            // NoHuddle image positioned in front of the card
-            Positioned(
-              // Move the image up further to create more overlap with the slider
-              top: 0,
-              left: 50,
-              right: 50,
-              child: Center(
+            // Logo image positioned in front of the card
+            if (widget.logoImagePath != null)
+              Positioned(
+                // Move the image up and align to left with small margin
+                top: 10,
+                left: 10,
                 child: Container(
-                  height: 59,
+                  height: 60,
+                  width: 60, // Added width constraint for better control
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      14,
+                    ), // Increased radius for more rounded corners
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.25),
                         spreadRadius: 0,
-                        blurRadius: 12,
+                        blurRadius: 4,
                         offset: const Offset(0, 4),
                       ),
                       BoxShadow(
                         color: Colors.black.withOpacity(0.15),
                         spreadRadius: -2,
-                        blurRadius: 6,
+                        blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      14,
+                    ), // Match the container's radius
                     child: Image.asset(
-                      'assets/images/noHuddleCrop.jpg',
-                      height: 50,
+                      widget.logoImagePath!,
+                      height: 100,
                       fit: BoxFit.contain,
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -234,8 +239,10 @@ class QuickNewsSlideShow extends StatelessWidget {
                 .map((article) => _buildArticleSlide(article, context))
                 .toList()
             : [_buildPlaceholderSlide()];
-
-    return SlideShowCard(slides: slides);
+    return SlideShowCard(
+      slides: slides,
+      logoImagePath: 'assets/images/noHuddle.jpg',
+    );
   }
 
   Widget _buildArticleSlide(Article article, BuildContext context) {
@@ -347,7 +354,7 @@ class QuickNewsSlideShow extends StatelessWidget {
   Widget _buildFallbackImage() {
     return Image.asset(
       'assets/images/noHuddle.jpg',
-      fit: BoxFit.cover,
+      fit: BoxFit.fill,
       alignment: Alignment.topCenter, // Align from top
       errorBuilder: (context, error, stackTrace) {
         return Container(
@@ -534,6 +541,7 @@ class NewsTickerSlideShow extends StatelessWidget {
       children: [
         SlideShowCard(
           slides: slides,
+          logoImagePath: 'assets/images/noHuddle.jpg',
           onTap:
               tickers.isNotEmpty
                   ? () {

@@ -32,6 +32,7 @@ flutter:
   assets:
     - assets/images/T4LLogo.png
     - assets/images/placeholder.jpeg
+    - assets/images/Facility.png
     - assets/logos/
     - assets/images/noHuddle.jpg
     - assets/images/noHuddleCrop.jpg

@@ -172,8 +172,8 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.asset(
-                            'assets/images/noHuddleCrop.jpg',
-                            height: 40, // Match the previous text height
+                            'assets/images/noHuddle.jpg',
+                            height: 150, // Match the previous text height
                             fit: BoxFit.contain,
                           ),
                         ),
