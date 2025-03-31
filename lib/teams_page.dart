@@ -4,7 +4,7 @@ import 'package:app/services/supabase_service.dart';
 import 'package:app/screens/team_details_page.dart';
 
 class TeamsPage extends StatefulWidget {
-  const TeamsPage({Key? key}) : super(key: key);
+  const TeamsPage({super.key});
 
   @override
   _TeamsPageState createState() => _TeamsPageState();
