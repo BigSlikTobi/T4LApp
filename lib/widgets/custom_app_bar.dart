@@ -1,115 +1,90 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:provider/provider.dart';
-import '../providers/language_provider.dart';
+import 'package:app/providers/language_provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final bool showBackButton;
-  final VoidCallback? onBackPressed;
-
-  const CustomAppBar({
-    super.key,
-    this.showBackButton = false,
-    this.onBackPressed,
-  });
+  const CustomAppBar({super.key});
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final isEnglish =
-        languageProvider.currentLanguage == LanguageProvider.english;
+    final double baseHeight = kToolbarHeight - 12;
+    final double increasedHeight = baseHeight * 1.5;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: AppBar(
-          backgroundColor: Colors.green[100]?.withOpacity(
-            0.9,
-          ), // Light green with slight transparency
-          elevation: 0,
-          leading:
-              showBackButton
-                  ? IconButton(
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: theme.colorScheme.primary,
-                    ),
-                    onPressed:
-                        onBackPressed ?? () => Navigator.of(context).pop(),
-                  )
-                  : IconButton(
-                    icon: Icon(Icons.home, color: theme.colorScheme.primary),
-                    onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
-                      }
-                    },
-                  ),
-          title: Image.asset(
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      toolbarHeight: kToolbarHeight,
+      title: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: Image.asset(
             'assets/images/T4LLogo.png',
-            height: 80,
-            fit: BoxFit.contain,
+            height: increasedHeight,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint(
+                'Error loading logo asset: $error\nStackTrace: $stackTrace',
+              );
+              return const Icon(Icons.error);
+            },
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: InkWell(
-                onTap: () {
-                  languageProvider.toggleLanguage();
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(
-                      color: theme.colorScheme.primary,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromARGB(
-                          255,
-                          173,
-                          214,
-                          187,
-                        ).withOpacity(0.2),
-                        spreadRadius: 1,
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        isEnglish ? 'EN' : 'DE',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Icon(
-                        Icons.language,
-                        size: 20,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
+      centerTitle: true,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: PopupMenuButton<String>(
+            offset: const Offset(0, 40),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              ),
+              child: Text(
+                languageProvider.currentLanguage == LanguageProvider.german
+                    ? '🇩🇪'
+                    : '🇺🇸',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+            onSelected: (String value) {
+              languageProvider.switchLanguage(value);
+            },
+            itemBuilder:
+                (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: LanguageProvider.english,
+                    child: Row(
+                      children: [
+                        Text('🇺🇸', style: TextStyle(fontSize: 12)),
+                        SizedBox(width: 8),
+                        Text('English'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: LanguageProvider.german,
+                    child: Row(
+                      children: [
+                        Text('🇩🇪', style: TextStyle(fontSize: 12)),
+                        SizedBox(width: 8),
+                        Text('Deutsch'),
+                      ],
+                    ),
+                  ),
+                ],
+          ),
+        ),
+      ],
     );
   }
 }

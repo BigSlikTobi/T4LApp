@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:app/utils/logger.dart';
+import '../widgets/custom_app_bar.dart';
 
 class TickerSlideshowPage extends StatefulWidget {
   final List<NewsTicker> tickers;
@@ -95,64 +96,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     final isWeb = screenSize.width > 600;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Image.asset(
-          'assets/images/T4LLogo.png',
-          height: 80,
-          fit: BoxFit.contain,
-        ),
-        actions: [
-          // Language toggle button with improved visibility
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              onTap: () {
-                languageProvider.toggleLanguage();
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      isEnglish ? 'EN' : 'DE',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Icon(
-                      Icons.language,
-                      size: 20,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: CustomAppBar(),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),

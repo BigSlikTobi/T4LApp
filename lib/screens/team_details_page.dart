@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 import 'package:app/utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:app/widgets/custom_app_bar.dart';
 import 'dart:math' as math;
 
 class TeamDetailsPage extends StatefulWidget {
@@ -379,23 +380,7 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Hero(
-              tag: 'team-logo-${widget.team.teamId}',
-              child: Image.asset(widget.team.logoPath, height: 32, width: 32),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                widget.team.fullName,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
+      appBar: const CustomAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
           await Future.wait([_loadTeamArticles(), _loadArticles()]);

@@ -9,6 +9,7 @@ import 'package:app/config.dart';
 import 'navbar.dart';
 import 'news.dart';
 import 'teams_page.dart';
+import 'package:app/widgets/custom_app_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,16 @@ void main() async {
   await Supabase.initialize(
     url: 'https://yqtiuzhedkfacwgormhn.supabase.co',
     anonKey: AppConfig.apiKey,
+  );
+
+  // Set system UI overlay style globally to prevent dark status bar
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent, // Transparent status bar
+      statusBarIconBrightness:
+          Brightness.dark, // Dark icons for light background
+      statusBarBrightness: Brightness.light, // Light status bar for iOS
+    ),
   );
 
   runApp(
@@ -52,16 +63,15 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Noto Sans',
 
-        // AppBar theme
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.black.withValues(
-            red: 0,
-            green: 0,
-            blue: 0,
-            alpha: 0.7 * 255,
-          ),
+        // AppBar theme - Updated to use transparent background
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent, // Transparent background
           elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
         ),
 
         // Text theme with Noto Sans
@@ -118,15 +128,14 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey[900],
         fontFamily: 'Noto Sans',
 
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.black.withValues(
-            red: 0,
-            green: 0,
-            blue: 0,
-            alpha: 0.8 * 255,
-          ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent, // Transparent background
           elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
         ),
 
         textTheme: const TextTheme(
@@ -206,82 +215,8 @@ class _GlassmorphicHomeState extends State<GlassmorphicHome> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final isEnglish =
-        languageProvider.currentLanguage == LanguageProvider.english;
-
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AppBar(
-              title: Image.asset(
-                'assets/images/T4LLogo.png',
-                height: 80,
-                fit: BoxFit.contain,
-              ),
-              actions: [
-                // Language toggle button
-                Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: InkWell(
-                    onTap: () {
-                      languageProvider.toggleLanguage();
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              red: 0,
-                              green: 0,
-                              blue: 0,
-                              alpha: 0.2 * 255,
-                            ),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            isEnglish ? 'EN' : 'DE',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          Icon(
-                            Icons.language,
-                            size: 20,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      appBar: const CustomAppBar(),
       body: SafeArea(child: _pages[_currentIndex]),
       bottomNavigationBar: Navbar(onIndexChanged: _onNavigationChange),
     );
