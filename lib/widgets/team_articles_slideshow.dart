@@ -1,32 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app/ticker_slideshow_page.dart';
+import 'package:app/models/article_ticker.dart';
 import 'package:app/models/article.dart';
-import 'package:app/services/supabase_service.dart';
+import 'package:provider/provider.dart';
+import 'package:app/providers/language_provider.dart';
 
-class EmbeddedTickerSlideshow extends StatelessWidget {
-  const EmbeddedTickerSlideshow({super.key});
+class TeamArticlesSlideshow extends StatelessWidget {
+  final List<ArticleTicker> teamArticles;
+  final String backgroundImage;
+
+  const TeamArticlesSlideshow({
+    super.key,
+    required this.teamArticles,
+    this.backgroundImage = 'assets/images/noHuddle.jpg',
+  });
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final isEnglish = languageProvider.currentLanguage == LanguageProvider.english;
+    
     return GestureDetector(
-      onTap: () async {
+      onTap: () {
         HapticFeedback.lightImpact();
-        final articlesData = await SupabaseService.getArticles();
-        final articles =
-            articlesData.map((json) => Article.fromJson(json)).toList()..sort(
-              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                a.createdAt ?? DateTime.now(),
-              ),
-            );
-
-        if (context.mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => TickerSlideshowPage(articles: articles),
-            ),
-          );
-        }
+        // Convert ArticleTicker to Article using toArticleJson
+        final articles = teamArticles
+            .map((ticker) => Article.fromJson(ticker.toArticleJson()))
+            .toList();
+            
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TickerSlideshowPage(articles: articles),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -47,7 +54,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
             children: [
               // Image background
               Image.asset(
-                'assets/images/noHuddle.jpg',
+                backgroundImage,
                 height: 300,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -68,38 +75,42 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
                   ),
                 ),
               ),
-              // Headline text
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
+              // Latest article headline
+              if (teamArticles.isNotEmpty) ...[
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                  ),
-                  child: const Text(
-                    "INSIDES FROM THE NFL",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      height: 1.2,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                    child: Text(
+                      isEnglish 
+                        ? teamArticles.first.englishHeadline 
+                        : teamArticles.first.germanHeadline,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-              ),
+              ],
               // Tap indicator icon
               Positioned(
                 top: 16,

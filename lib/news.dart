@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Add this import for ImageFilter
 import 'package:app/models/article.dart';
-import 'package:app/models/news_ticker.dart'
-    hide Team; // Hide Team from news_ticker
+import 'package:app/models/article_ticker.dart'; // Changed to use ArticleTicker
 import 'package:app/models/team.dart';
 import 'package:app/services/supabase_service.dart';
 import 'package:app/utils/logger.dart';
@@ -11,7 +10,7 @@ import 'package:app/providers/language_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'modern_news_card.dart';
 import 'article_page.dart';
-import 'slideshow_card.dart';
+import 'widgets/embedded_ticker_slideshow.dart'; // Added import
 
 // Import the team logo mapping from the Team model
 final teamLogoMap = {
@@ -64,23 +63,27 @@ class _NewsState extends State<News> {
   bool showArchived = false;
   Future<List<Article>>? articlesFuture;
   List<Article> articles = [];
-  List<NewsTicker> newsTickers = [];
+  List<ArticleTicker> articleTickers = []; // Changed to ArticleTicker
   bool isLoading = false;
   String? errorMessage;
   RealtimeChannel? _subscription;
+  RealtimeChannel? _tickerSubscription; // Added for article ticker subscription
 
   @override
   void initState() {
     super.initState();
     articlesFuture = _fetchArticles();
-    _fetchNewsTickers();
+    _fetchArticleTickers(); // Changed to fetch article tickers
     _setupRealtimeSubscription();
+    _setupTickerRealtimeSubscription(); // Added for real-time ticker updates
   }
 
   @override
   void dispose() {
     _subscription?.unsubscribe();
     _subscription = null;
+    _tickerSubscription?.unsubscribe();
+    _tickerSubscription = null;
     SupabaseService.dispose();
     super.dispose();
   }
@@ -109,6 +112,28 @@ class _NewsState extends State<News> {
                       a.createdAt ?? DateTime.now(),
                     ),
                   );
+          });
+        }
+      },
+    );
+  }
+
+  // Added method to setup realtime subscription for article tickers
+  void _setupTickerRealtimeSubscription() {
+    // Clean up existing subscription
+    _tickerSubscription?.unsubscribe();
+    _tickerSubscription = null;
+
+    // Create new subscription
+    _tickerSubscription = SupabaseService.subscribeToArticleTickers(
+      teamId: selectedTeamId,
+      onArticleTickersUpdate: (tickers) {
+        if (mounted) {
+          setState(() {
+            AppLogger.debug(
+              'Received realtime update with ${tickers.length} article tickers',
+            );
+            articleTickers = tickers;
           });
         }
       },
@@ -178,34 +203,122 @@ class _NewsState extends State<News> {
     }
   }
 
-  Future<void> _fetchNewsTickers() async {
-    AppLogger.debug('Starting to fetch news tickers in News widget');
-    try {
-      final tickers = await SupabaseService.getNewsTickers(
-        team: selectedTeamId,
-      );
-      AppLogger.debug('Received ${tickers.length} tickers from service');
+  // Changed to fetch article tickers with retry mechanism
+  Future<void> _fetchArticleTickers() async {
+    AppLogger.debug('Starting to fetch article tickers in News widget');
 
-      // Sort by publishedAt date
-      final sortedTickers =
-          tickers.toList()..sort((a, b) {
-            final aDate = DateTime.tryParse(a.sourceArticle?.publishedAt ?? '');
-            final bDate = DateTime.tryParse(b.sourceArticle?.publishedAt ?? '');
-            if (aDate == null || bDate == null) return 0;
-            return bDate.compareTo(aDate); // newest first
+    // Use a retry mechanism with exponential backoff
+    const maxRetries = 3;
+    int retryCount = 0;
+    bool success = false;
+
+    while (!success && retryCount < maxRetries) {
+      try {
+        // Add more detailed logging about the request
+        AppLogger.debug(
+          'Calling SupabaseService.getArticleTickers with teamId: ${selectedTeamId ?? "null"} (attempt ${retryCount + 1})',
+        );
+
+        final tickers = await SupabaseService.getArticleTickers(
+          teamId: selectedTeamId,
+        );
+
+        // More comprehensive logging of the response
+        AppLogger.debug('Received ${tickers.length} tickers from service');
+
+        if (tickers.isEmpty) {
+          AppLogger.debug('WARNING: Received empty tickers list from Supabase');
+
+          // Only retry if this wasn't our last attempt
+          if (retryCount < maxRetries - 1) {
+            retryCount++;
+            AppLogger.debug(
+              'Will retry fetching tickers (attempt ${retryCount + 1} of $maxRetries)',
+            );
+            await Future.delayed(
+              Duration(seconds: retryCount * 2),
+            ); // Exponential backoff
+            continue;
+          }
+        } else {
+          // Log first ticker details to verify data structure
+          final firstTicker = tickers.first;
+          AppLogger.debug('First ticker details:');
+          AppLogger.debug('- ID: ${firstTicker.id}');
+          AppLogger.debug('- Image2: ${firstTicker.image2 ?? "null"}');
+          AppLogger.debug('- EnglishHeadline: ${firstTicker.englishHeadline}');
+          AppLogger.debug('- GermanHeadline: ${firstTicker.germanHeadline}');
+          AppLogger.debug('- TeamId: ${firstTicker.teamId ?? "null"}');
+
+          // Log raw JSON for debugging
+          AppLogger.debug('DEBUGGING: First ticker raw JSON:');
+          AppLogger.debug(firstTicker.toJson().toString());
+        }
+
+        // Sort by createdAt date
+        final sortedTickers =
+            tickers.toList()..sort((a, b) {
+              final aDate = DateTime.tryParse(a.createdAt ?? '');
+              final bDate = DateTime.tryParse(b.createdAt ?? '');
+              if (aDate == null || bDate == null) return 0;
+              return bDate.compareTo(aDate); // newest first
+            });
+
+        if (mounted) {
+          setState(() {
+            articleTickers = sortedTickers;
+            AppLogger.debug(
+              'Updated articleTickers state with ${sortedTickers.length} items',
+            );
           });
+        }
 
-      if (mounted) {
-        setState(() {
-          newsTickers = sortedTickers;
-          AppLogger.debug(
-            'Updated newsTickers state with ${sortedTickers.length} items',
-          );
-        });
+        success = true; // Mark operation as successful
+      } catch (e, stackTrace) {
+        retryCount++;
+        final waitTime = retryCount * 2; // Exponential backoff
+
+        AppLogger.error(
+          'Error fetching article tickers (attempt $retryCount of $maxRetries)',
+          e,
+        );
+        AppLogger.error('Stack trace:', stackTrace);
+
+        if (retryCount < maxRetries) {
+          AppLogger.debug('Retrying after $waitTime seconds...');
+          await Future.delayed(Duration(seconds: waitTime));
+        }
       }
-    } catch (e, stackTrace) {
-      AppLogger.error('Error fetching news tickers', e);
-      AppLogger.error('Stack trace:', stackTrace);
+    }
+
+    // If we still have no tickers after all retries, try an alternate approach
+    if (success == false && mounted && articleTickers.isEmpty) {
+      AppLogger.debug(
+        'All fetch attempts failed, trying alternate approach with delay',
+      );
+
+      // Try one more time after a longer delay
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          SupabaseService.getArticleTickers(teamId: selectedTeamId)
+              .then((newTickers) {
+                if (mounted && newTickers.isNotEmpty) {
+                  setState(() {
+                    articleTickers = newTickers;
+                    AppLogger.debug(
+                      'Fetch successful on final attempt with ${newTickers.length} tickers',
+                    );
+                  });
+                }
+              })
+              .catchError((error) {
+                AppLogger.error(
+                  'Final attempt to fetch tickers also failed',
+                  error,
+                );
+              });
+        }
+      });
     }
   }
 
@@ -230,11 +343,12 @@ class _NewsState extends State<News> {
       articlesFuture = _fetchArticles();
     });
 
-    // Also refresh news tickers when articles are refreshed
-    _fetchNewsTickers();
+    // Also refresh article tickers when articles are refreshed
+    _fetchArticleTickers();
 
-    // Re-setup realtime subscription with current filters
+    // Re-setup realtime subscriptions with current filters
     _setupRealtimeSubscription();
+    _setupTickerRealtimeSubscription();
   }
 
   @override
@@ -285,7 +399,7 @@ class _NewsState extends State<News> {
                           ),
                         );
                       } else if (articles.isNotEmpty ||
-                          newsTickers.isNotEmpty) {
+                          articleTickers.isNotEmpty) {
                         return Container(
                           color: Colors.white,
                           child: SingleChildScrollView(
@@ -371,10 +485,8 @@ class _NewsState extends State<News> {
                                       ),
                                     ),
                                   ),
-                                  NewsTickerSlideShow(
-                                    tickers: newsTickers,
-                                    isEnglish: isEnglish,
-                                  ),
+                                  // Changed to use EmbeddedTickerSlideshow
+                                  const EmbeddedTickerSlideshow(),
                                   SizedBox(height: 24),
                                   // Add dividing line and team picker with headline
                                   Divider(

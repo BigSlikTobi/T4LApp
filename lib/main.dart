@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';

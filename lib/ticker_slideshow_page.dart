@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:app/models/news_ticker.dart';
+import 'package:app/models/article.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
@@ -7,9 +7,9 @@ import 'package:app/utils/logger.dart';
 import '../widgets/custom_app_bar.dart';
 
 class TickerSlideshowPage extends StatefulWidget {
-  final List<NewsTicker> tickers;
+  final List<Article> articles;
 
-  const TickerSlideshowPage({super.key, required this.tickers});
+  const TickerSlideshowPage({super.key, required this.articles});
 
   @override
   State<TickerSlideshowPage> createState() => _TickerSlideshowPageState();
@@ -18,50 +18,31 @@ class TickerSlideshowPage extends StatefulWidget {
 class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   late PageController _pageController;
   int _currentPage = 0;
+  late List<Article> _articles;
 
   @override
   void initState() {
     super.initState();
-    // Sort tickers by created_at or publishedAt date (newest first)
-    widget.tickers.sort((a, b) {
-      // Try created_at first
-      final aCreatedDate = DateTime.tryParse(a.createdAt ?? '');
-      final bCreatedDate = DateTime.tryParse(b.createdAt ?? '');
 
-      // If both have created_at dates, compare them
-      if (aCreatedDate != null && bCreatedDate != null) {
-        return bCreatedDate.compareTo(aCreatedDate); // newest first
+    _articles = List.from(widget.articles);
+
+    // Sort articles by created_at date (newest first)
+    _articles.sort((a, b) {
+      final aDate = a.createdAt;
+      final bDate = b.createdAt;
+      if (aDate != null && bDate != null) {
+        return bDate.compareTo(aDate); // newest first
       }
-
-      // Fall back to publishedAt if created_at is not available
-      final aPublishedDate = DateTime.tryParse(
-        a.sourceArticle?.publishedAt ?? '',
-      );
-      final bPublishedDate = DateTime.tryParse(
-        b.sourceArticle?.publishedAt ?? '',
-      );
-
-      // If both have published dates, compare them
-      if (aPublishedDate != null && bPublishedDate != null) {
-        return bPublishedDate.compareTo(aPublishedDate); // newest first
-      }
-
-      // If only one has a created_at date, prioritize it
-      if (aCreatedDate != null) return -1; // a comes first
-      if (bCreatedDate != null) return 1; // b comes first
-
-      // If only one has a published date, prioritize it
-      if (aPublishedDate != null) return -1; // a comes first
-      if (bPublishedDate != null) return 1; // b comes first
-
-      return 0; // no valid dates to compare
+      if (aDate != null) return -1;
+      if (bDate != null) return 1;
+      return 0;
     });
 
-    _pageController = PageController(initialPage: 0);
-
     AppLogger.debug(
-      'TickerSlideshowPage initialized with ${widget.tickers.length} tickers',
+      'TickerSlideshowPage initialized with ${_articles.length} articles',
     );
+
+    _pageController = PageController(initialPage: 0);
   }
 
   @override
@@ -70,18 +51,29 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     super.dispose();
   }
 
-  String _formatDate(String? dateString, bool isEnglish) {
-    if (dateString == null || dateString.isEmpty) {
+  String _formatDate(dynamic dateInput, bool isEnglish) {
+    if (dateInput == null) {
       return isEnglish ? 'No date' : 'Kein Datum';
     }
 
     try {
-      final date = DateTime.parse(dateString);
+      DateTime date;
+      if (dateInput is DateTime) {
+        date = dateInput;
+      } else if (dateInput is String) {
+        if (dateInput.isEmpty) {
+          return isEnglish ? 'No date' : 'Kein Datum';
+        }
+        date = DateTime.parse(dateInput);
+      } else {
+        return isEnglish ? 'Invalid date' : 'Ungültiges Datum';
+      }
+
       final format =
           isEnglish ? DateFormat('MMM d, yyyy') : DateFormat('dd.MM.yyyy');
       return format.format(date);
     } catch (e) {
-      AppLogger.error('Error formatting date: $dateString', e);
+      AppLogger.error('Error formatting date: $dateInput', e);
       return isEnglish ? 'Invalid date' : 'Ungültiges Datum';
     }
   }
@@ -96,7 +88,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     final isWeb = screenSize.width > 600;
 
     return Scaffold(
-      appBar: CustomAppBar(),
+      appBar: const CustomAppBar(),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
@@ -125,7 +117,6 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                     ],
                   ),
                 ),
-
                 // Slideshow with responsive width
                 Expanded(
                   child: Padding(
@@ -134,15 +125,18 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                     ),
                     child: PageView.builder(
                       controller: _pageController,
-                      itemCount: widget.tickers.length,
+                      itemCount: _articles.length,
                       onPageChanged: (index) {
                         setState(() {
                           _currentPage = index;
                         });
                       },
                       itemBuilder: (context, index) {
-                        final ticker = widget.tickers[index];
-                        return _buildSlide(ticker, isEnglish, theme);
+                        return _buildArticleSlide(
+                          _articles[index],
+                          isEnglish,
+                          theme,
+                        );
                       },
                     ),
                   ),
@@ -155,27 +149,19 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     );
   }
 
-  Widget _buildSlide(NewsTicker ticker, bool isEnglish, ThemeData theme) {
+  Widget _buildArticleSlide(Article article, bool isEnglish, ThemeData theme) {
     final displayContent =
-        isEnglish ? ticker.englishInformation : ticker.germanInformation;
-
-    // Use getDisplayText to get the appropriate headline based on language
-    final headlineText = ticker.getDisplayText(isEnglish);
-
-    final sourceName = ticker.sourceArticle?.source?.name;
-
-    // Format both dates
-    final createdDate = _formatDate(ticker.createdAt, isEnglish);
-    final publishedDate = _formatDate(
-      ticker.sourceArticle?.publishedAt,
-      isEnglish,
-    );
+        isEnglish ? article.englishArticle : article.germanArticle;
+    final headlineText =
+        isEnglish ? article.englishHeadline : article.germanHeadline;
+    final sourceName = article.sourceAuthor;
+    final createdDate = _formatDate(article.createdAt, isEnglish);
 
     final isWeb = MediaQuery.of(context).size.width > 600;
 
-    // Add more detailed logging
+    // Add detailed logging
     AppLogger.debug(
-      'Building slide for ticker ${ticker.id}: ${isEnglish ? 'English' : 'German'} headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
+      'Building article slide for ${article.id}: ${isEnglish ? 'English' : 'German'} headline: ${headlineText.substring(0, headlineText.length > 20 ? 20 : headlineText.length)}...',
     );
 
     return LayoutBuilder(
@@ -217,17 +203,16 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-
                     // Image - responsive height with top alignment
                     SizedBox(
                       height: isWeb ? 400 : constraints.maxHeight * 0.35,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child:
-                            ticker.imageUrl != null &&
-                                    ticker.imageUrl!.isNotEmpty
+                            article.imageUrl != null &&
+                                    article.imageUrl!.isNotEmpty
                                 ? Image.network(
-                                  ticker.imageUrl!,
+                                  article.imageUrl!,
                                   fit: BoxFit.cover,
                                   alignment:
                                       Alignment.topCenter, // Align from top
@@ -258,9 +243,8 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                                 : _buildFallbackImage(),
                       ),
                     ),
-
                     // Information - responsive padding
-                    if (displayContent != null && displayContent.isNotEmpty)
+                    if (displayContent.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.all(
                           isWeb ? 24.0 : constraints.maxWidth * 0.04,
@@ -270,7 +254,6 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                           style: theme.textTheme.bodyLarge,
                         ),
                       ),
-
                     // Date and Source with page indicator - responsive padding
                     Padding(
                       padding: EdgeInsets.all(
@@ -309,14 +292,6 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                                     ),
                                 ],
                               ),
-                              if (ticker.sourceArticle?.publishedAt != null)
-                                Text(
-                                  '${isEnglish ? 'Published' : 'Veröffentlicht'}: $publishedDate',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
                             ],
                           ),
                           // Page indicator below source
@@ -333,7 +308,7 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                '${_currentPage + 1}/${widget.tickers.length}',
+                                '${_currentPage + 1}/${_articles.length}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -344,15 +319,14 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                         ],
                       ),
                     ),
-
-                    // Team logo section
-                    if (ticker.team?.teamId != null)
+                    // Team ID section
+                    if (article.teamId != null)
                       Padding(
                         padding: EdgeInsets.all(constraints.maxWidth * 0.02),
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: Image.asset(
-                            'assets/logos/${ticker.team!.teamId!.toLowerCase()}.png',
+                            'assets/logos/${article.teamId!.toLowerCase()}.png',
                             height: isWeb ? 60 : constraints.maxHeight * 0.06,
                             errorBuilder:
                                 (_, __, ___) => const SizedBox.shrink(),
@@ -373,20 +347,18 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     return Image.asset(
       'assets/images/noHuddle.jpg',
       fit: BoxFit.cover,
-      alignment: Alignment.topCenter, // Align from top
-      errorBuilder: (context, error, stackTrace) {
-        AppLogger.error('Error loading fallback image', error);
-        return Container(
-          color: Colors.grey[300],
-          child: const Center(
-            child: Icon(
-              Icons.image_not_supported,
-              size: 50,
-              color: Colors.grey,
+      alignment: Alignment.topCenter,
+      errorBuilder:
+          (context, error, stackTrace) => Container(
+            color: Colors.grey[300],
+            child: const Center(
+              child: Icon(
+                Icons.image_not_supported,
+                size: 50,
+                color: Colors.grey,
+              ),
             ),
           ),
-        );
-      },
     );
   }
 }

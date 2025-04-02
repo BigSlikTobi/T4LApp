@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:app/models/team.dart';
 import 'package:app/models/article.dart';
-import 'package:app/models/news_ticker.dart'
-    hide Team; // Hide the Team class from news_ticker.dart
+import 'package:app/models/article_ticker.dart';
 import 'package:app/models/team_article.dart';
 import 'package:app/services/supabase_service.dart';
 import 'package:app/modern_news_card.dart';
 import 'package:app/article_page.dart';
-import 'package:app/widgets/embedded_ticker_slideshow.dart';
-import 'package:provider/provider.dart';
-import 'package:app/providers/language_provider.dart';
 import 'package:app/utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/widgets/custom_app_bar.dart';
+import 'package:app/widgets/team_articles_slideshow.dart';
 import 'dart:math' as math;
 
 class TeamDetailsPage extends StatefulWidget {
@@ -24,7 +21,7 @@ class TeamDetailsPage extends StatefulWidget {
 
 class _TeamDetailsPageState extends State<TeamDetailsPage> {
   List<Article> _articles = [];
-  List<NewsTicker> _teamArticleTickers = [];
+  List<ArticleTicker> _teamArticleTickers = [];
   bool _isLoading = true;
   bool _isLoadingTeamArticles = true;
   String? _errorMessage;
@@ -123,7 +120,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
 
   void _processTeamArticles(List<Map<String, dynamic>> teamArticlesData) {
     if (teamArticlesData.isEmpty) {
-      // No articles found, set empty lists but no error
       setState(() {
         _teamArticleTickers = [];
         _isLoadingTeamArticles = false;
@@ -137,7 +133,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     final String currentTeamId = widget.team.teamId.toUpperCase();
     final filteredArticlesData =
         teamArticlesData.where((json) {
-          // Extract team ID from the json (could be in 'team' field as string or object)
           String? articleTeamId;
           if (json['team'] != null) {
             if (json['team'] is Map<String, dynamic> &&
@@ -147,13 +142,9 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
               articleTeamId = json['team'].toString().toUpperCase();
             }
           }
-
-          // Log filtering information for debugging
           AppLogger.debug(
             'Article teamId: $articleTeamId, Current teamId: $currentTeamId',
           );
-
-          // Keep articles that match the current team
           return articleTeamId == currentTeamId;
         }).toList();
 
@@ -162,19 +153,13 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     );
 
     if (mounted) {
-      // Convert to TeamArticle objects and then directly to NewsTicker format
-      final languageProvider = Provider.of<LanguageProvider>(
-        context,
-        listen: false,
-      );
-      final isEnglish =
-          languageProvider.currentLanguage == LanguageProvider.english;
-      final List<NewsTicker> tickers =
+      // Convert to ArticleTicker objects
+      final List<ArticleTicker> tickers =
           filteredArticlesData.map((json) {
-            // Convert JSON to TeamArticle and then to NewsTicker format in one step
             final article = TeamArticle.fromJson(json);
-            final tickerJson = article.toNewsTickerJson(isEnglish);
-            return NewsTicker.fromJson(tickerJson);
+            final tickerJson =
+                article.toArticleTickerJson(); // Using new method
+            return ArticleTicker.fromJson(tickerJson);
           }).toList();
 
       setState(() {
@@ -267,7 +252,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
   Widget _buildArticlesList() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDeviceWide = constraints.maxWidth > 600;
         final horizontalPadding =
             constraints.maxWidth > 1200
                 ? (constraints.maxWidth - 1200) / 2
@@ -352,9 +336,10 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
 
     // Calculate appropriate height based on screen size
     final screenSize = MediaQuery.of(context).size;
-    final isDeviceWide = screenSize.width > 600;
-    final slideHeight =
-        isDeviceWide ? 400.0 : math.min(360.0, screenSize.height * 0.45);
+    final slideHeight = math.min(
+      screenSize.width > 600 ? 400.0 : 360.0,
+      screenSize.height * 0.45,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +355,10 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
         ),
         SizedBox(
           height: slideHeight,
-          child: EmbeddedTickerSlideshow(tickers: _teamArticleTickers),
+          child: TeamArticlesSlideshow(
+            teamArticles: _teamArticleTickers,
+            backgroundImage: 'assets/images/Facility.png',
+          ),
         ),
         const Divider(thickness: 1.0, height: 32),
       ],
@@ -388,22 +376,12 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Define the breakpoint for responsive layout
-              final isDeviceWide = constraints.maxWidth > 600;
-
-              // Use the responsive variable for horizontal padding
-              final horizontalPadding =
-                  isDeviceWide
-                      ? (constraints.maxWidth > 1200 ? 24.0 : 16.0)
-                      : 8.0;
-
+              final horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 8.0;
               return Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isDeviceWide ? 1200 : double.infinity,
-                    ),
+                    constraints: constraints,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: Column(

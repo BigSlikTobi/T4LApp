@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:app/models/article.dart';
-import 'package:app/models/news_ticker.dart';
-import 'package:app/ticker_slideshow_page.dart';
-import 'package:app/utils/logger.dart';
 
 class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
@@ -74,117 +70,53 @@ class _SlideShowCardState extends State<SlideShowCard> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Card(
-              elevation: 2,
-              // Increase bottom margin significantly to provide more spacing for the cards underneath
-              margin: const EdgeInsets.only(
+            // Logo positioned at the top
+            if (widget.logoImagePath != null)
+              Positioned(
                 top: 8,
-                left: 8,
                 right: 8,
-                bottom: 56,
+                child: Image.asset(
+                  widget.logoImagePath!,
+                  height: 40,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double goldenRatio = 1.618;
-                        final double slideHeight =
-                            constraints.maxWidth / goldenRatio;
 
-                        return SizedBox(
-                          height: slideHeight.clamp(180.0, 300.0),
-                          child: PageView.builder(
-                            controller: _pageController,
-                            itemCount: widget.slides.length,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentPage = index;
-                              });
-                            },
-                            itemBuilder: (context, index) {
-                              return widget.slides[index];
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Page indicator dots
-                  if (widget.slides.length > 1)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        top: 8.0,
-                        left: 8.0,
-                        right: 8.0,
-                        bottom: 16.0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(widget.slides.length, (index) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                                  index == _currentPage
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.grey.shade300,
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                ],
+            // PageView for slides
+            SizedBox(
+              height: 200, // Fixed height for slides
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                children: widget.slides,
               ),
             ),
 
-            // Logo image positioned in front of the card
-            if (widget.logoImagePath != null)
+            // Page indicator dots
+            if (widget.slides.length > 1)
               Positioned(
-                // Move the image up and align to left with small margin
-                top: 10,
-                left: 10,
-                child: Container(
-                  height: 60,
-                  width: 60, // Added width constraint for better control
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      14,
-                    ), // Increased radius for more rounded corners
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        spreadRadius: 0,
-                        blurRadius: 4,
-                        offset: const Offset(0, 4),
+                bottom: 8,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    widget.slides.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color:
+                            _currentPage == index
+                                ? Theme.of(context).primaryColor
+                                : Colors.grey.withOpacity(0.5),
                       ),
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        spreadRadius: -2,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      14,
-                    ), // Match the container's radius
-                    child: Image.asset(
-                      widget.logoImagePath!,
-                      height: 100,
-                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -197,10 +129,6 @@ class _SlideShowCardState extends State<SlideShowCard> {
     if (kIsWeb) {
       return LayoutBuilder(
         builder: (context, constraints) {
-          // Calculate the width factor based on available width
-          // For larger screens (>1200px), use 2/3
-          // For medium screens (>800px), use 3/4
-          // For smaller screens, use full width
           double widthFactor;
           if (constraints.maxWidth > 1200) {
             widthFactor = 2 / 3;
@@ -354,290 +282,19 @@ class QuickNewsSlideShow extends StatelessWidget {
   Widget _buildFallbackImage() {
     return Image.asset(
       'assets/images/noHuddle.jpg',
-      fit: BoxFit.fill,
-      alignment: Alignment.topCenter, // Align from top
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey[300],
-          child: const Center(
-            child: Icon(
-              Icons.image_not_supported,
-              size: 50,
-              color: Colors.grey,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class NewsTickerSlideShow extends StatelessWidget {
-  final List<NewsTicker> tickers;
-  final bool isEnglish;
-
-  const NewsTickerSlideShow({
-    super.key,
-    required this.tickers,
-    this.isEnglish = true,
-  });
-
-  Widget _buildGlassmorphicContainer(Widget child) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(
-              0.3,
-            ), // Darker background for better contrast
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTickerSlide(NewsTicker ticker, BuildContext context) {
-    return Stack(
-      children: [
-        // Ticker image or fallback
-        Positioned.fill(
-          child:
-              ticker.imageUrl != null && ticker.imageUrl!.isNotEmpty
-                  ? Image.network(
-                    ticker.imageUrl!,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.topCenter, // Align from top
-                    errorBuilder: (_, __, ___) => _buildFallbackImage(),
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value:
-                              loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                        ),
-                      );
-                    },
-                  )
-                  : _buildFallbackImage(),
-        ),
-        // Gradient overlay for better text readability
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.8),
-                ],
-                stops: const [0.6, 1.0],
-              ),
-            ),
-          ),
-        ),
-        // Source at the bottom right above headline
-        if (ticker.sourceArticle?.source?.name != null)
-          Positioned(
-            bottom: 64,
-            right: 16,
-            child: _buildGlassmorphicContainer(
-              Text(
-                ticker.sourceArticle!.source!.name!,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11, // 35% smaller than original 14px
-                  fontWeight: FontWeight.w500,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black87,
-                      offset: Offset(0, 1),
-                      blurRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        // Headline now at the bottom
-        Positioned(
-          bottom: 16,
-          left: 16,
-          right: 16,
-          child: _buildGlassmorphicContainer(
-            Text(
-              ticker.getDisplayText(isEnglish),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                shadows: [
-                  Shadow(
-                    color: Colors.black,
-                    offset: Offset(0, 1),
-                    blurRadius: 3,
-                  ),
-                  Shadow(
-                    color: Colors.black54,
-                    offset: Offset(0, 2),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-        // Team logo if available
-        if (ticker.team?.teamId != null)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Image.asset(
-              'assets/logos/${ticker.team!.teamId!.toLowerCase()}.png',
-              height: 40,
-              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    List<Widget> slides =
-        tickers.isNotEmpty
-            ? tickers
-                .take(5)
-                .map((ticker) => _buildTickerSlide(ticker, context))
-                .toList()
-            : [_buildPlaceholderSlide()];
-
-    // Log the number of tickers being displayed
-    AppLogger.debug(
-      'Displaying ${tickers.length} tickers in NewsTickerSlideShow, isEnglish: $isEnglish',
-    );
-    if (tickers.isNotEmpty) {
-      AppLogger.debug(
-        'First ticker headline: ${tickers.first.getDisplayText(isEnglish)}',
-      );
-      AppLogger.debug(
-        'Language specific fields - English: ${tickers.first.headlineEnglish}, German: ${tickers.first.headlineGerman}',
-      );
-    }
-
-    return Stack(
-      children: [
-        SlideShowCard(
-          slides: slides,
-          logoImagePath: 'assets/images/noHuddle.jpg',
-          onTap:
-              tickers.isNotEmpty
-                  ? () {
-                    AppLogger.debug(
-                      'NewsTickerSlideShow card tapped - navigating to TickerSlideshowPage',
-                    );
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder:
-                            (context) => TickerSlideshowPage(tickers: tickers),
-                      ),
-                    );
-                  }
-                  : null,
-        ),
-        // Add a more visible "tap to view more" indicator
-        if (tickers.isNotEmpty)
-          Positioned(
-            bottom: 62, // Position above the card bottom margin
-            right: 16,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.touch_app, color: Colors.white, size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    isEnglish ? 'Tap for more' : 'Tippen für mehr',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildPlaceholderSlide() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(child: _buildFallbackImage()),
-        Container(
-          padding: const EdgeInsets.all(12.0),
-          color: Colors.black.withOpacity(0.7),
-          child: Text(
-            isEnglish ? 'Latest NFL Updates' : 'Aktuelle NFL Updates',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFallbackImage() {
-    return Image.asset(
-      'assets/images/noHuddle.jpg',
       fit: BoxFit.cover,
-      alignment: Alignment.topCenter, // Align from top
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey[300],
-          child: const Center(
-            child: Icon(
-              Icons.image_not_supported,
-              size: 50,
-              color: Colors.grey,
+      alignment: Alignment.topCenter,
+      errorBuilder:
+          (context, error, stackTrace) => Container(
+            color: Colors.grey[300],
+            child: const Center(
+              child: Icon(
+                Icons.image_not_supported,
+                size: 50,
+                color: Colors.grey,
+              ),
             ),
           ),
-        );
-      },
     );
   }
 }
