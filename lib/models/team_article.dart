@@ -13,6 +13,8 @@ class TeamArticle {
   final String? status;
   final String? createdAt;
   final Team? team;
+  final String? sourceName;  // Added source name field
+  final String? sourceUrl;   // Added source URL field
 
   TeamArticle({
     this.id,
@@ -26,6 +28,8 @@ class TeamArticle {
     this.status,
     this.createdAt,
     this.team,
+    this.sourceName,  // Added to constructor
+    this.sourceUrl,   // Added to constructor
   });
 
   factory TeamArticle.fromJson(Map<String, dynamic> json) {
@@ -63,6 +67,8 @@ class TeamArticle {
         status: json['status'],
         createdAt: json['createdAt'] ?? json['created_at'],
         team: team,
+        sourceName: json['sourceName'] ?? json['source_name'],  // Parse source name
+        sourceUrl: json['sourceUrl'] ?? json['source_url'],     // Parse source URL
       );
     } catch (e, stackTrace) {
       AppLogger.error(
@@ -72,17 +78,20 @@ class TeamArticle {
     }
   }
 
-  // Adapter method to convert TeamArticle to a format compatible with the NewsTicker model
-  Map<String, dynamic> toNewsTickerJson(bool isEnglish) {
+  // Convert TeamArticle to ArticleTicker format
+  Map<String, dynamic> toArticleTickerJson() {
     return {
       'id': id ?? 0,
-      'Image': image1,
-      'EnglishInformation': summaryEnglish,
-      'GermanInformation': summaryGerman,
-      'HeadlineEnglish': headlineEnglish,
-      'HeadlineGerman': headlineGerman,
-      'created_at': createdAt,
-      'Team': team?.teamId,
+      'englishHeadline': headlineEnglish,
+      'germanHeadline': headlineGerman,
+      'summaryEnglish': summaryEnglish,
+      'summaryGerman': summaryGerman,
+      'Image2': image1,
+      'createdAt': createdAt,  // No need for toIso8601String since createdAt is already a String
+      'teamId': team?.teamId,
+      'sourceName': sourceName,
+      'sourceUrl': sourceUrl,
+      'status': status,
     };
   }
 }
