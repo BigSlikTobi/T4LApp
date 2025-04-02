@@ -33,40 +33,46 @@ class ArticleTicker {
   factory ArticleTicker.fromJson(Map<String, dynamic> json) {
     try {
       AppLogger.debug('Processing article ticker JSON: ${json.toString()}');
-
+      
       // Validate required fields
       if (json['id'] == null) {
         throw FormatException('Missing required field: id');
       }
 
-      // Extract headline fields with detailed logging
-      final englishHeadline = json['englishHeadline']?.toString() ?? '';
-      final germanHeadline = json['germanHeadline']?.toString() ?? '';
-      final summaryEnglish = json['SummaryEnglish']?.toString() ?? '';
-      final summaryGerman = json['SummaryGerman']?.toString() ?? '';
-
-      // Handle image field - check both capitalization variants
-      final image2 = json['Image2']?.toString() ?? json['image2']?.toString();
-
-      AppLogger.debug(
-        'Parsed headlines - English: $englishHeadline, German: $germanHeadline',
-      );
-      AppLogger.debug('Parsed image2: $image2');
-      AppLogger.debug(
-        'Parsed summaries - English: ${summaryEnglish.length > 20 ? "${summaryEnglish.substring(0, 20)}..." : summaryEnglish}, '
-        'German: ${summaryGerman.length > 20 ? "${summaryGerman.substring(0, 20)}..." : summaryGerman}',
-      );
-
-      // Handle potential integer parsing issues
+      // Handle potential integer parsing issues for ID
       final int tickerId;
       if (json['id'] is int) {
         tickerId = json['id'];
       } else {
         tickerId = int.tryParse(json['id'].toString()) ?? 0;
-        AppLogger.debug(
-          'Converted string ID "${json['id']}" to integer: $tickerId',
-        );
       }
+
+      // Helper function to get case-insensitive field value
+      T? getField<T>(String fieldName, [T? defaultValue]) {
+        final camelCase = fieldName;
+        final pascalCase = fieldName[0].toUpperCase() + fieldName.substring(1);
+        
+        return json[pascalCase] ?? json[camelCase] ?? defaultValue;
+      }
+
+      // Extract fields using case-insensitive helper
+      final englishHeadline = getField<String>('englishHeadline', '')!;
+      final germanHeadline = getField<String>('germanHeadline', '')!;
+      final summaryEnglish = getField<String>('summaryEnglish', '')!;
+      final summaryGerman = getField<String>('summaryGerman', '')!;
+      final image2 = getField<String>('image2');
+      final createdAt = getField<String>('createdAt');
+      final sourceName = getField<String>('sourceName');
+      final sourceUrl = getField<String>('sourceUrl');
+      final teamId = getField<String>('teamId');
+      final status = getField<String>('status');
+
+      AppLogger.debug('Parsed article ticker fields:');
+      AppLogger.debug('- ID: $tickerId');
+      AppLogger.debug('- English Headline: $englishHeadline');
+      AppLogger.debug('- German Headline: $germanHeadline');
+      AppLogger.debug('- Image URL: $image2');
+      AppLogger.debug('- Team ID: $teamId');
 
       return ArticleTicker(
         id: tickerId,
@@ -75,12 +81,11 @@ class ArticleTicker {
         summaryEnglish: summaryEnglish,
         summaryGerman: summaryGerman,
         image2: image2,
-        createdAt: json['createdAt']?.toString(),
-        sourceName:
-            json['SourceName']?.toString() ?? json['sourceName']?.toString(),
-        sourceUrl: json['sourceUrl']?.toString(),
-        teamId: json['teamId']?.toString(),
-        status: json['status']?.toString(),
+        createdAt: createdAt,
+        sourceName: sourceName,
+        sourceUrl: sourceUrl,
+        teamId: teamId,
+        status: status,
       );
     } catch (e, stackTrace) {
       AppLogger.error(

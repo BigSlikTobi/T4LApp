@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app/ticker_slideshow_page.dart';
 import 'package:app/models/article_ticker.dart';
-import 'package:app/models/article.dart';
-import 'package:provider/provider.dart';
-import 'package:app/providers/language_provider.dart';
+import 'package:app/utils/logger.dart'; // Fixed import path
 
 class TeamArticlesSlideshow extends StatelessWidget {
   final List<ArticleTicker> teamArticles;
@@ -18,20 +16,29 @@ class TeamArticlesSlideshow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final isEnglish = languageProvider.currentLanguage == LanguageProvider.english;
-    
+    AppLogger.debug(
+      'Building TeamArticlesSlideshow with ${teamArticles.length} articles',
+    );
+
     return GestureDetector(
       onTap: () {
+        if (teamArticles.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No team articles available'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
         HapticFeedback.lightImpact();
-        // Convert ArticleTicker to Article using toArticleJson
-        final articles = teamArticles
-            .map((ticker) => Article.fromJson(ticker.toArticleJson()))
-            .toList();
-            
+        AppLogger.debug(
+          'Navigating to TickerSlideshowPage with ${teamArticles.length} articles',
+        );
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => TickerSlideshowPage(articles: articles),
+            builder: (context) => TickerSlideshowPage(articles: teamArticles),
           ),
         );
       },
@@ -58,8 +65,23 @@ class TeamArticlesSlideshow extends StatelessWidget {
                 height: 300,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  AppLogger.error(
+                    'Error loading background image: $error',
+                    stackTrace,
+                  );
+                  return Container(
+                    height: 300,
+                    color: Colors.grey[300],
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
+                  );
+                },
               ),
-              // Gradient overlay for better text readability
+              // Gradient overlay
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -75,42 +97,50 @@ class TeamArticlesSlideshow extends StatelessWidget {
                   ),
                 ),
               ),
-              // Latest article headline
-              if (teamArticles.isNotEmpty) ...[
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      isEnglish 
-                        ? teamArticles.first.englishHeadline 
-                        : teamArticles.first.germanHeadline,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+              // Content box
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
                     ),
                   ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'INSIDES FROM THE LOCKER ROOM',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 1.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (teamArticles.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '${teamArticles.length} articles available',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
+              ),
               // Tap indicator icon
               Positioned(
                 top: 16,
@@ -121,8 +151,10 @@ class TeamArticlesSlideshow extends StatelessWidget {
                     color: Colors.black.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.touch_app,
+                  child: Icon(
+                    teamArticles.isEmpty
+                        ? Icons.error_outline
+                        : Icons.touch_app,
                     color: Colors.white,
                     size: 16,
                   ),

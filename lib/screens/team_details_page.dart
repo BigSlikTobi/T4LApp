@@ -10,11 +10,11 @@ import 'package:app/utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/widgets/custom_app_bar.dart';
 import 'package:app/widgets/team_articles_slideshow.dart';
-import 'dart:math' as math;
 
 class TeamDetailsPage extends StatefulWidget {
   final Team team;
   const TeamDetailsPage({super.key, required this.team});
+
   @override
   _TeamDetailsPageState createState() => _TeamDetailsPageState();
 }
@@ -44,7 +44,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
   }
 
   void _setupRealtimeSubscription() {
-    // Set up realtime subscription for team articles
     _teamArticlesSubscription = SupabaseService.subscribeToTeamArticles(
       team: widget.team.teamId,
       onTeamArticlesUpdate: (teamArticlesData) {
@@ -66,7 +65,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
         _isLoading = true;
         _errorMessage = null;
       });
-      // Load articles filtered by team
       final articlesData = await SupabaseService.getArticles(
         team: widget.team.teamId,
       );
@@ -102,7 +100,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
         _teamArticlesErrorMessage = null;
       });
 
-      // Load team articles from the edge function
       final teamArticlesData = await SupabaseService.getTeamArticles(
         teamId: widget.team.teamId,
       );
@@ -120,6 +117,7 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
 
   void _processTeamArticles(List<Map<String, dynamic>> teamArticlesData) {
     if (teamArticlesData.isEmpty) {
+      AppLogger.debug('No team articles data received');
       setState(() {
         _teamArticleTickers = [];
         _isLoadingTeamArticles = false;
@@ -128,48 +126,73 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     }
 
     AppLogger.debug('Processing ${teamArticlesData.length} team articles...');
-
-    // Add client-side filtering to ensure only articles for this team are shown
     final String currentTeamId = widget.team.teamId.toUpperCase();
-    final filteredArticlesData =
-        teamArticlesData.where((json) {
-          String? articleTeamId;
-          if (json['team'] != null) {
-            if (json['team'] is Map<String, dynamic> &&
-                json['team']['teamId'] != null) {
-              articleTeamId = json['team']['teamId'].toString().toUpperCase();
-            } else {
-              articleTeamId = json['team'].toString().toUpperCase();
+
+    try {
+      final filteredArticlesData =
+          teamArticlesData.where((json) {
+            String? articleTeamId;
+            if (json['team'] != null) {
+              if (json['team'] is Map<String, dynamic> &&
+                  json['team']['teamId'] != null) {
+                articleTeamId = json['team']['teamId'].toString().toUpperCase();
+              } else {
+                articleTeamId = json['team'].toString().toUpperCase();
+              }
             }
-          }
-          AppLogger.debug(
-            'Article teamId: $articleTeamId, Current teamId: $currentTeamId',
-          );
-          return articleTeamId == currentTeamId;
-        }).toList();
-
-    AppLogger.debug(
-      'Filtered team articles from ${teamArticlesData.length} to ${filteredArticlesData.length}',
-    );
-
-    if (mounted) {
-      // Convert to ArticleTicker objects
-      final List<ArticleTicker> tickers =
-          filteredArticlesData.map((json) {
-            final article = TeamArticle.fromJson(json);
-            final tickerJson =
-                article.toArticleTickerJson(); // Using new method
-            return ArticleTicker.fromJson(tickerJson);
+            AppLogger.debug(
+              'Article teamId: $articleTeamId, Current teamId: $currentTeamId',
+            );
+            return articleTeamId == currentTeamId;
           }).toList();
 
-      setState(() {
-        _teamArticleTickers = tickers;
-        _isLoadingTeamArticles = false;
-      });
-
       AppLogger.debug(
-        'Successfully updated ${_teamArticleTickers.length} team article tickers for team ${widget.team.teamId}',
+        'Filtered ${teamArticlesData.length} articles to ${filteredArticlesData.length} for team ${widget.team.teamId}',
       );
+
+      if (mounted) {
+        final List<ArticleTicker> tickers =
+            filteredArticlesData
+                .map((json) {
+                  try {
+                    AppLogger.debug(
+                      'Converting article JSON to TeamArticle: ${json['id']}',
+                    );
+                    final article = TeamArticle.fromJson(json);
+                    AppLogger.debug(
+                      'Converting TeamArticle to ticker JSON - ID: ${article.id}, Headline: ${article.headlineEnglish}',
+                    );
+                    final tickerJson = article.toArticleTickerJson();
+                    AppLogger.debug('Ticker JSON: $tickerJson');
+                    return ArticleTicker.fromJson(tickerJson);
+                  } catch (e, stack) {
+                    AppLogger.error(
+                      'Error processing article: ${json['id']}',
+                      e,
+                      stack,
+                    );
+                    return null;
+                  }
+                })
+                .whereType<ArticleTicker>()
+                .toList();
+
+        setState(() {
+          _teamArticleTickers = tickers;
+          _isLoadingTeamArticles = false;
+        });
+        AppLogger.debug(
+          'Successfully processed ${tickers.length} team article tickers for team ${widget.team.teamId}',
+        );
+      }
+    } catch (e, stack) {
+      AppLogger.error('Error processing team articles', e, stack);
+      setState(() {
+        _teamArticleTickers = [];
+        _isLoadingTeamArticles = false;
+        _teamArticlesErrorMessage =
+            'Failed to process team articles: ${e.toString()}';
+      });
     }
   }
 
@@ -178,22 +201,6 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => ArticlePage(article: article)),
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text(
-            'Loading articles...',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
     );
   }
 
@@ -250,36 +257,34 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
   }
 
   Widget _buildArticlesList() {
+    final isWeb = MediaQuery.of(context).size.width > 600;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final horizontalPadding =
-            constraints.maxWidth > 1200
-                ? (constraints.maxWidth - 1200) / 2
-                : constraints.maxWidth > 600
-                ? 50.0
-                : 16.0;
         return SizedBox(
-          height: _articles.isEmpty ? 200 : null,
+          width: double.infinity,
           child:
               _articles.isEmpty
                   ? _buildEmptyState()
-                  : ListView.builder(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: 16.0,
-                    ),
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _articles.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: ModernNewsCard(
+                  : Padding(
+                    padding: const EdgeInsets.all(1.0),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: _articles.length,
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: isWeb ? 600 : 600,
+                        mainAxisExtent: 120,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemBuilder: (context, index) {
+                        return ModernNewsCard(
                           article: _articles[index],
                           onArticleClick: _onArticleClick,
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
         );
       },
@@ -288,19 +293,9 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
 
   Widget _buildTeamArticlesSection() {
     if (_isLoadingTeamArticles) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24.0),
-        child: Center(
-          child: Column(
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 12),
-              Text(
-                'Loading team news...',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
-          ),
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
         ),
       );
     }
@@ -331,91 +326,113 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
     }
 
     if (_teamArticleTickers.isEmpty) {
-      return const SizedBox.shrink(); // No team articles to show
+      return const SizedBox.shrink();
     }
 
-    // Calculate appropriate height based on screen size
-    final screenSize = MediaQuery.of(context).size;
-    final slideHeight = math.min(
-      screenSize.width > 600 ? 400.0 : 360.0,
-      screenSize.height * 0.45,
-    );
+    final isWeb = MediaQuery.of(context).size.width > 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth =
+        isWeb
+            ? (screenWidth < 1200 ? screenWidth / 3 : 400.0)
+            : double.infinity;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'Team News',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    return Center(
+      child: Column(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: TeamArticlesSlideshow(
+              teamArticles: _teamArticleTickers,
+              backgroundImage: 'assets/images/Facility.png',
+            ),
           ),
-        ),
-        SizedBox(
-          height: slideHeight,
-          child: TeamArticlesSlideshow(
-            teamArticles: _teamArticleTickers,
-            backgroundImage: 'assets/images/Facility.png',
-          ),
-        ),
-        const Divider(thickness: 1.0, height: 32),
-      ],
+          SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = MediaQuery.of(context).size.width > 600;
+
     return Scaffold(
       appBar: const CustomAppBar(),
+      backgroundColor: Colors.white,
       body: RefreshIndicator(
         onRefresh: () async {
           await Future.wait([_loadTeamArticles(), _loadArticles()]);
         },
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding = constraints.maxWidth > 600 ? 24.0 : 8.0;
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: ConstrainedBox(
-                    constraints: constraints,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isWeb ? 1200 : double.infinity,
+              ),
+              child: Column(
+                children: [
+                  Expanded(
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Team Articles Section
-                          _buildTeamArticlesSection(),
-
-                          // Regular Articles Section Header
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                            child: Text(
-                              'Latest Articles',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isWeb ? 24.0 : 8.0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 20,
+                                left: 20,
+                                right: 20,
+                              ),
+                              child: Hero(
+                                tag: 'team-logo-${widget.team.teamId}',
+                                child: Image.asset(
+                                  widget.team.logoPath,
+                                  height: 120,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.sports_football,
+                                      size: 120,
+                                      color: Colors.grey[400],
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ),
-
-                          // Regular Articles Content
-                          _isLoading
-                              ? _buildLoadingState()
-                              : _errorMessage != null
-                              ? _buildErrorState()
-                              : _buildArticlesList(),
-
-                          // Bottom padding for better scrolling
-                          const SizedBox(height: 32),
-                        ],
+                            _buildTeamArticlesSection(),
+                            Divider(height: 1, color: Colors.grey.shade300),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14.0,
+                                horizontal: 20.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [],
+                              ),
+                            ),
+                            if (_isLoading)
+                              Center(
+                                child: CircularProgressIndicator(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              )
+                            else if (_errorMessage != null)
+                              _buildErrorState()
+                            else
+                              _buildArticlesList(),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           ),
         ),
       ),
