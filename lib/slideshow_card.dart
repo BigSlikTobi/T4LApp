@@ -64,8 +64,18 @@ class _SlideShowCardState extends State<SlideShowCard> {
       child: InkWell(
         onTap: widget.onTap,
         // Add splash effect to make card visibly clickable
-        splashColor: Theme.of(context).primaryColor.withOpacity(0.3),
-        highlightColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        splashColor: Color.fromRGBO(
+          Theme.of(context).primaryColor.r.toInt(),
+          Theme.of(context).primaryColor.g.toInt(),
+          Theme.of(context).primaryColor.b.toInt(),
+          0.3,
+        ),
+        highlightColor: Color.fromRGBO(
+          Theme.of(context).primaryColor.r.toInt(),
+          Theme.of(context).primaryColor.g.toInt(),
+          Theme.of(context).primaryColor.b.toInt(),
+          0.1,
+        ),
         borderRadius: BorderRadius.circular(12),
         child: Stack(
           clipBehavior: Clip.none,
@@ -115,7 +125,12 @@ class _SlideShowCardState extends State<SlideShowCard> {
                         color:
                             _currentPage == index
                                 ? Theme.of(context).primaryColor
-                                : Colors.grey.withOpacity(0.5),
+                                : Color.fromRGBO(
+                                  Colors.grey.r.toInt(),
+                                  Colors.grey.g.toInt(),
+                                  Colors.grey.b.toInt(),
+                                  0.5,
+                                ),
                       ),
                     ),
                   ),
@@ -208,8 +223,18 @@ class QuickNewsSlideShow extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2), // Added subtle darkness at top
-                  Colors.black.withOpacity(0.8), // Made bottom gradient darker
+                  Color.fromRGBO(
+                    0,
+                    0,
+                    0,
+                    0.2,
+                  ), // replaced Colors.black.withOpacity(0.2)
+                  Color.fromRGBO(
+                    0,
+                    0,
+                    0,
+                    0.8,
+                  ), // replaced Colors.black.withOpacity(0.8)
                 ],
                 stops: const [0.4, 1.0],
               ),
@@ -231,12 +256,22 @@ class QuickNewsSlideShow extends StatelessWidget {
                 fontSize: 16,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withOpacity(0.8),
+                    color: Color.fromRGBO(
+                      0,
+                      0,
+                      0,
+                      0.8,
+                    ), // replaced Colors.black.withOpacity(0.8)
                     offset: const Offset(0, 1),
                     blurRadius: 3,
                   ),
                   Shadow(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Color.fromRGBO(
+                      0,
+                      0,
+                      0,
+                      0.6,
+                    ), // replaced Colors.black.withOpacity(0.6)
                     offset: const Offset(0, 2),
                     blurRadius: 6,
                   ),
@@ -262,7 +297,12 @@ class QuickNewsSlideShow extends StatelessWidget {
         // Text placeholder
         Container(
           padding: const EdgeInsets.all(12.0),
-          color: Colors.black.withOpacity(0.7),
+          color: Color.fromRGBO(
+            0,
+            0,
+            0,
+            0.7,
+          ), // replaced Colors.black.withOpacity(0.7)
           child: const Text(
             'Quick news from the NFL',
             style: TextStyle(

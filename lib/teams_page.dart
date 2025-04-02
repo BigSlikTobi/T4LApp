@@ -7,10 +7,10 @@ class TeamsPage extends StatefulWidget {
   const TeamsPage({super.key});
 
   @override
-  _TeamsPageState createState() => _TeamsPageState();
+  TeamsPageState createState() => TeamsPageState();
 }
 
-class _TeamsPageState extends State<TeamsPage>
+class TeamsPageState extends State<TeamsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final List<String> _conferences = ['AFC', 'NFC'];
@@ -169,20 +169,16 @@ class _TeamsPageState extends State<TeamsPage>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Color.fromRGBO(0, 0, 0, 0.1),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Color.fromRGBO(0, 0, 0, 0.3)),
                 ),
                 child: Text(
                   division,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Color.fromRGBO(0, 0, 0, 1),
                   ),
                 ),
               ),

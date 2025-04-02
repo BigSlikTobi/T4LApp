@@ -16,10 +16,10 @@ class TeamDetailsPage extends StatefulWidget {
   const TeamDetailsPage({super.key, required this.team});
 
   @override
-  _TeamDetailsPageState createState() => _TeamDetailsPageState();
+  TeamDetailsPageState createState() => TeamDetailsPageState();
 }
 
-class _TeamDetailsPageState extends State<TeamDetailsPage> {
+class TeamDetailsPageState extends State<TeamDetailsPage> {
   List<Article> _articles = [];
   List<ArticleTicker> _teamArticleTickers = [];
   bool _isLoading = true;
