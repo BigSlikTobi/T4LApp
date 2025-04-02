@@ -201,9 +201,9 @@ class _GlassmorphicHomeState extends State<GlassmorphicHome> {
 
   final List<Widget> _pages = [
     News(),
-    Center(child: Text('Drills')),
     TeamsPage(),
     Center(child: Text('Schedule')),
+    Center(child: Text('More')),
   ];
 
   void _onNavigationChange(int index) {

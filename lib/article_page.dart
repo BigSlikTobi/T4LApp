@@ -96,41 +96,6 @@ class _ArticlePageState extends State<ArticlePage> {
     );
   }
 
-  Widget _buildSourceBadge(ThemeData theme) {
-    if (widget.article.sourceAuthor == null ||
-        widget.article.sourceAuthor!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return InkWell(
-      onTap: () => _launchURL(widget.article.sourceUrl),
-      child: Container(
-        margin: const EdgeInsets.only(top: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withAlpha(25),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.colorScheme.primary.withAlpha(75)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.link, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 6),
-            Text(
-              'Source: ${widget.article.sourceAuthor}',
-              style: TextStyle(
-                fontSize: 14,
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -144,179 +109,163 @@ class _ArticlePageState extends State<ArticlePage> {
     final screenSize = MediaQuery.of(context).size;
     final isWeb = screenSize.width > 600;
 
-    return Scaffold(
-      appBar: const CustomAppBar(),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isWeb ? 24.0 : 16.0,
-                  vertical: 16.0,
+    Widget content = SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Image
+              if (_processedImageUrl != null)
+                SizedBox(
+                  height: isWeb ? 400 : screenSize.height * 0.35,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      _processedImageUrl!,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return _buildLoadingPlaceholder(theme);
+                      },
+                    ),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    // Page header with image
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: screenSize.height * 0.015,
-                        horizontal: isWeb ? 24.0 : screenSize.width * 0.04,
+              const SizedBox(height: 16),
+
+              // 2. Date and Source
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      _formatDate(widget.article.createdAt, isEnglish),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.article.sourceAuthor != null)
+                    Flexible(
+                      child: Text(
+                        widget.article.sourceAuthor!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
                       ),
                     ),
-                    // Main content card
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Headline
-                          Padding(
-                            padding: EdgeInsets.all(isWeb ? 24.0 : 16.0),
-                            child: Text(
-                              isEnglish
-                                  ? widget.article.englishHeadline
-                                  : widget.article.germanHeadline,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          // Main image
-                          if (_processedImageUrl != null)
-                            SizedBox(
-                              height: isWeb ? 400 : screenSize.height * 0.35,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  _processedImageUrl!,
-                                  fit: BoxFit.cover,
-                                  alignment: Alignment.topCenter,
-                                  errorBuilder:
-                                      (_, __, ___) => _buildFallbackImage(),
-                                  loadingBuilder: (
-                                    context,
-                                    child,
-                                    loadingProgress,
-                                  ) {
-                                    if (loadingProgress == null) return child;
-                                    return _buildLoadingPlaceholder(theme);
-                                  },
-                                ),
-                              ),
-                            ),
-                          // Article content
-                          Padding(
-                            padding: EdgeInsets.all(isWeb ? 24.0 : 16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Date and author
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        _formatDate(
-                                          widget.article.createdAt,
-                                          isEnglish,
-                                        ),
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(color: Colors.grey[600]),
-                                      ),
-                                    ),
-                                    if (widget.article.sourceAuthor != null)
-                                      Flexible(
-                                        child: Text(
-                                          widget.article.sourceAuthor!,
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                          textAlign: TextAlign.end,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                // HTML content
-                                Html(
-                                  data: articleContent,
-                                  style: {
-                                    "body": Style(
-                                      fontSize: FontSize(16.0),
-                                      fontFamily: 'Roboto',
-                                      lineHeight: LineHeight(1.6),
-                                    ),
-                                    "h1": Style(
-                                      fontSize: FontSize(24.0),
-                                      fontWeight: FontWeight.bold,
-                                      margin: Margins(
-                                        top: Margin(16),
-                                        bottom: Margin(16),
-                                      ),
-                                    ),
-                                    "h2": Style(
-                                      fontSize: FontSize(20.0),
-                                      fontWeight: FontWeight.bold,
-                                      margin: Margins(
-                                        top: Margin(12),
-                                        bottom: Margin(12),
-                                      ),
-                                    ),
-                                    "h3": Style(
-                                      fontSize: FontSize(18.0),
-                                      fontWeight: FontWeight.bold,
-                                      margin: Margins(
-                                        top: Margin(8),
-                                        bottom: Margin(8),
-                                      ),
-                                    ),
-                                    "p": Style(
-                                      margin: Margins(
-                                        top: Margin(8),
-                                        bottom: Margin(8),
-                                      ),
-                                    ),
-                                    "blockquote": Style(
-                                      margin: Margins(
-                                        left: Margin(16),
-                                        right: Margin(16),
-                                        top: Margin(16),
-                                        bottom: Margin(16),
-                                      ),
-                                      padding: HtmlPaddings(
-                                        left: HtmlPadding(16),
-                                      ),
-                                      border: Border(
-                                        left: BorderSide(
-                                          color: theme.colorScheme.primary,
-                                          width: 4,
-                                        ),
-                                      ),
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  },
-                                ),
-                                _buildSourceBadge(theme),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 3. Headline
+              Text(
+                isEnglish
+                    ? widget.article.englishHeadline
+                    : widget.article.germanHeadline,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+
+              // 4. Source Link
+              if (widget.article.sourceUrl != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () => _launchURL(widget.article.sourceUrl),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withAlpha(25),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        widget.article.sourceAuthor ??
+                            (isEnglish ? 'Source' : 'Quelle'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // 5. Article Content
+              Html(
+                data: articleContent,
+                style: {
+                  "body": Style(
+                    fontSize: FontSize(16.0),
+                    fontFamily: 'Roboto',
+                    lineHeight: LineHeight(1.6),
+                  ),
+                  "h1": Style(
+                    fontSize: FontSize(24.0),
+                    fontWeight: FontWeight.bold,
+                    margin: Margins(top: Margin(16), bottom: Margin(16)),
+                  ),
+                  "h2": Style(
+                    fontSize: FontSize(20.0),
+                    fontWeight: FontWeight.bold,
+                    margin: Margins(top: Margin(12), bottom: Margin(12)),
+                  ),
+                  "h3": Style(
+                    fontSize: FontSize(18.0),
+                    fontWeight: FontWeight.bold,
+                    margin: Margins(top: Margin(8), bottom: Margin(8)),
+                  ),
+                  "p": Style(
+                    margin: Margins(top: Margin(8), bottom: Margin(8)),
+                  ),
+                  "blockquote": Style(
+                    margin: Margins(
+                      left: Margin(16),
+                      right: Margin(16),
+                      top: Margin(16),
+                      bottom: Margin(16),
+                    ),
+                    padding: HtmlPaddings(left: HtmlPadding(16)),
+                    border: Border(
+                      left: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 4,
+                      ),
+                    ),
+                    fontStyle: FontStyle.italic,
+                  ),
+                },
+              ),
+            ],
           ),
         ),
       ),
     );
+
+    if (isWeb) {
+      // Center content with constrained width for web
+      content = Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: screenSize.width * 0.5, // 50% of screen width
+          ),
+          child: content,
+        ),
+      );
+    }
+
+    return Scaffold(appBar: const CustomAppBar(), body: content);
   }
 }

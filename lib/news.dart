@@ -409,81 +409,16 @@ class _NewsState extends State<News> {
                                 horizontal: isWeb ? 24.0 : 8.0,
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Add heading and subheader with glassmorphism effect
-                                  Container(
-                                    margin: EdgeInsets.only(bottom: 0, top: 10),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 10,
-                                          sigmaY: 10,
-                                        ),
-                                        child: Container(
-                                          alignment: Alignment.center,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 0.0,
-                                            horizontal: 20.0,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.7,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              15,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.2,
-                                              ),
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.1,
-                                                ),
-                                                blurRadius: 10,
-                                                spreadRadius: 2,
-                                              ),
-                                            ],
-                                          ),
-                                          child: Column(
-                                            mainAxisSize:
-                                                MainAxisSize
-                                                    .min, // Ensure column takes minimum vertical space
-                                            children: [
-                                              Text(
-                                                'NoHuddle News',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineMedium
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.black87,
-                                                    ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                'QUICK INSIGHTS FROM THE NFL',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium
-                                                    ?.copyWith(
-                                                      color: Colors.black54,
-                                                      fontStyle:
-                                                          FontStyle.italic,
-                                                    ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
+                                  // Replace heading and subheader
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 20,
+                                      left: 20,
+                                      right: 20,
                                     ),
+                                    child: Container(),
                                   ),
                                   // Changed to use EmbeddedTickerSlideshow
                                   const EmbeddedTickerSlideshow(),
@@ -495,219 +430,174 @@ class _NewsState extends State<News> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 4.0,
+                                      vertical: 14.0,
+                                      horizontal: 20.0,
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 10,
-                                          sigmaY: 10,
-                                        ),
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 20.0,
-                                            vertical: 5.0,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.7,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              2,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.2,
-                                              ),
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.1,
-                                                ),
-                                                blurRadius: 2,
-                                                spreadRadius: 2,
-                                              ),
-                                            ],
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  'NFL News',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .headlineSmall
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.black87,
-                                                      ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (
-                                                      BuildContext context,
-                                                    ) {
-                                                      return Dialog(
-                                                        backgroundColor:
-                                                            Colors.white,
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                12,
-                                                              ),
-                                                        ),
-                                                        child: Container(
-                                                          width: 80,
-                                                          padding:
-                                                              EdgeInsets.symmetric(
-                                                                vertical: 8,
-                                                              ),
-                                                          child: SingleChildScrollView(
-                                                            child: Column(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
-                                                              children: [
-                                                                InkWell(
-                                                                  onTap: () {
-                                                                    setState(() {
-                                                                      selectedTeamId =
-                                                                          null;
-                                                                    });
-                                                                    _refreshArticles();
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                    );
-                                                                  },
-                                                                  child: Center(
-                                                                    child: Padding(
-                                                                      padding:
-                                                                          const EdgeInsets.all(
-                                                                            1.0,
-                                                                          ),
-                                                                      child: Image.asset(
-                                                                        'assets/logos/nfl.png',
-                                                                        height:
-                                                                            40,
-                                                                        alignment:
-                                                                            Alignment.center,
-                                                                        fit:
-                                                                            BoxFit.contain,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                                Divider(
-                                                                  height: 1,
-                                                                ),
-                                                                ...allTeams.map(
-                                                                  (
-                                                                    team,
-                                                                  ) => InkWell(
-                                                                    onTap: () {
-                                                                      setState(() {
-                                                                        selectedTeamId =
-                                                                            team.teamId;
-                                                                      });
-                                                                      _refreshArticles();
-                                                                      Navigator.pop(
-                                                                        context,
-                                                                      );
-                                                                    },
-                                                                    child: Center(
-                                                                      child: Padding(
-                                                                        padding:
-                                                                            const EdgeInsets.all(
-                                                                              8.0,
-                                                                            ),
-                                                                        child: Image.asset(
-                                                                          team.logoPath,
-                                                                          height:
-                                                                              40,
-                                                                          fit:
-                                                                              BoxFit.contain,
-                                                                          errorBuilder: (
-                                                                            context,
-                                                                            error,
-                                                                            stackTrace,
-                                                                          ) {
-                                                                            return Image.asset(
-                                                                              'assets/images/placeholder.jpeg',
-                                                                              height:
-                                                                                  40,
-                                                                            );
-                                                                          },
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      );
-                                                    },
-                                                  );
-                                                },
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: 12.0,
-                                                    vertical: 8.0,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'NFL News',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: const Color.fromARGB(
+                                                    221,
+                                                    32,
+                                                    68,
+                                                    43,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white,
+                                                ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return Dialog(
+                                                  backgroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          8.0,
+                                                          12,
                                                         ),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black
-                                                            .withOpacity(0.1),
-                                                        blurRadius: 4,
-                                                        offset: Offset(0, 2),
-                                                      ),
-                                                    ],
                                                   ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Image.asset(
-                                                        selectedTeamId == null
-                                                            ? 'assets/logos/nfl.png'
-                                                            : Team(
-                                                              teamId:
-                                                                  selectedTeamId!,
-                                                              fullName: '',
-                                                              division: '',
-                                                              conference: '',
-                                                            ).logoPath,
-                                                        height: 32,
-                                                        fit: BoxFit.contain,
+                                                  child: Container(
+                                                    width: 80,
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          vertical: 8,
+                                                        ),
+                                                    child: SingleChildScrollView(
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          InkWell(
+                                                            onTap: () {
+                                                              setState(() {
+                                                                selectedTeamId =
+                                                                    null;
+                                                              });
+                                                              _refreshArticles();
+                                                              Navigator.pop(
+                                                                context,
+                                                              );
+                                                            },
+                                                            child: Center(
+                                                              child: Padding(
+                                                                padding:
+                                                                    const EdgeInsets.all(
+                                                                      1.0,
+                                                                    ),
+                                                                child: Image.asset(
+                                                                  'assets/logos/nfl.png',
+                                                                  height: 40,
+                                                                  alignment:
+                                                                      Alignment
+                                                                          .center,
+                                                                  fit:
+                                                                      BoxFit
+                                                                          .contain,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Divider(height: 1),
+                                                          ...allTeams.map(
+                                                            (team) => InkWell(
+                                                              onTap: () {
+                                                                setState(() {
+                                                                  selectedTeamId =
+                                                                      team.teamId;
+                                                                });
+                                                                _refreshArticles();
+                                                                Navigator.pop(
+                                                                  context,
+                                                                );
+                                                              },
+                                                              child: Center(
+                                                                child: Padding(
+                                                                  padding:
+                                                                      const EdgeInsets.all(
+                                                                        8.0,
+                                                                      ),
+                                                                  child: Image.asset(
+                                                                    team.logoPath,
+                                                                    height: 40,
+                                                                    fit:
+                                                                        BoxFit
+                                                                            .contain,
+                                                                    errorBuilder: (
+                                                                      context,
+                                                                      error,
+                                                                      stackTrace,
+                                                                    ) {
+                                                                      return Image.asset(
+                                                                        'assets/images/placeholder.jpeg',
+                                                                        height:
+                                                                            40,
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                      SizedBox(width: 8),
-                                                      Icon(
-                                                        Icons.arrow_drop_down,
-                                                      ),
-                                                    ],
+                                                    ),
                                                   ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12.0,
+                                              vertical: 8.0,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 2),
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Image.asset(
+                                                  selectedTeamId == null
+                                                      ? 'assets/logos/nfl.png'
+                                                      : Team(
+                                                        teamId: selectedTeamId!,
+                                                        fullName: '',
+                                                        division: '',
+                                                        conference: '',
+                                                      ).logoPath,
+                                                  height: 32,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                                SizedBox(width: 8),
+                                                Icon(Icons.arrow_drop_down),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ),
                                   // Continue with the grid view

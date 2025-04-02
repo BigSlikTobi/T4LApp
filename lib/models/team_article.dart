@@ -13,8 +13,8 @@ class TeamArticle {
   final String? status;
   final String? createdAt;
   final Team? team;
-  final String? sourceName;  // Added source name field
-  final String? sourceUrl;   // Added source URL field
+  final String? sourceName; // Added source name field
+  final String? sourceUrl; // Added source URL field
 
   TeamArticle({
     this.id,
@@ -28,8 +28,8 @@ class TeamArticle {
     this.status,
     this.createdAt,
     this.team,
-    this.sourceName,  // Added to constructor
-    this.sourceUrl,   // Added to constructor
+    this.sourceName, // Added to constructor
+    this.sourceUrl, // Added to constructor
   });
 
   factory TeamArticle.fromJson(Map<String, dynamic> json) {
@@ -67,8 +67,9 @@ class TeamArticle {
         status: json['status'],
         createdAt: json['createdAt'] ?? json['created_at'],
         team: team,
-        sourceName: json['sourceName'] ?? json['source_name'],  // Parse source name
-        sourceUrl: json['sourceUrl'] ?? json['source_url'],     // Parse source URL
+        sourceName:
+            json['sourceName'] ?? json['source_name'], // Parse source name
+        sourceUrl: json['sourceUrl'] ?? json['source_url'], // Parse source URL
       );
     } catch (e, stackTrace) {
       AppLogger.error(
@@ -84,12 +85,16 @@ class TeamArticle {
       'id': id ?? 0,
       'englishHeadline': headlineEnglish,
       'germanHeadline': headlineGerman,
-      'summaryEnglish': summaryEnglish,
-      'summaryGerman': summaryGerman,
-      'Image2': image1,
-      'createdAt': createdAt,  // No need for toIso8601String since createdAt is already a String
+      'SummaryEnglish':
+          summaryEnglish, // Changed from 'summaryEnglish' to 'SummaryEnglish' to match expected format
+      'SummaryGerman':
+          summaryGerman, // Changed from 'summaryGerman' to 'SummaryGerman' to match expected format
+      'Image2':
+          image1, // Changed from 'image2' to 'Image2' to match the capitalization in ArticleTicker.toJson()
+      'createdAt': createdAt,
       'teamId': team?.teamId,
-      'sourceName': sourceName,
+      'SourceName':
+          sourceName, // Changed from 'sourceName' to 'SourceName' to match capitalization
       'sourceUrl': sourceUrl,
       'status': status,
     };
