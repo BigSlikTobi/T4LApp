@@ -179,8 +179,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                                           child,
                                           loadingProgress,
                                         ) {
-                                          if (loadingProgress == null)
+                                          if (loadingProgress == null) {
                                             return child;
+                                          }
                                           return Center(
                                             child: CircularProgressIndicator(
                                               value:
@@ -244,30 +245,6 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                         ),
                       );
                     },
-                  ),
-                  // Page indicator dots
-                  Positioned(
-                    bottom: 16,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _articles.length,
-                        (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color:
-                                _currentPage == index
-                                    ? theme.colorScheme.primary
-                                    : Colors.grey.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),

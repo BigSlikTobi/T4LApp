@@ -38,7 +38,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Color.fromRGBO(0, 0, 0, 0.2),
                   spreadRadius: 1,
                   blurRadius: 8,
                   offset: const Offset(0, 3),
@@ -65,7 +65,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.transparent,
-                            Colors.black.withOpacity(0.7),
+                            Color.fromRGBO(0, 0, 0, 0.7),
                           ],
                           stops: const [0.6, 1.0],
                         ),
@@ -83,10 +83,15 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
+                        color: Color.fromRGBO(0, 0, 0, 0.4),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Color.fromRGBO(
+                            255,
+                            255,
+                            255,
+                            0.3,
+                          ), // replaced: Colors.white.withOpacity(0.3)
                           width: 1,
                         ),
                       ),
@@ -111,7 +116,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Color.fromRGBO(0, 0, 0, 0.5),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

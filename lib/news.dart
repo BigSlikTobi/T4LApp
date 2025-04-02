@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Add this import for ImageFilter
 import 'package:app/models/article.dart';
 import 'package:app/models/article_ticker.dart'; // Changed to use ArticleTicker
 import 'package:app/models/team.dart';
@@ -569,8 +568,9 @@ class _NewsState extends State<News> {
                                                   BorderRadius.circular(8.0),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.1),
+                                                  color: Colors.black.withAlpha(
+                                                    26,
+                                                  ), // equivalent to 10% opacity
                                                   blurRadius: 4,
                                                   offset: Offset(0, 2),
                                                 ),
