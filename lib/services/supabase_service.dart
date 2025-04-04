@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/models/team.dart' as team_model;
 import 'package:app/models/article_ticker.dart';
+import 'package:app/models/roster.dart';
 
 class SupabaseService {
   static const int _maxRetries = 3;
@@ -642,18 +643,19 @@ class SupabaseService {
         final http.Client client = http.Client();
         try {
           AppLogger.debug('Starting getArticleTickers request...');
-          
+
           // Build URI with query parameters if teamId is provided
           final uri = Uri.parse(
             'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/articleTicker',
           ).replace(
-            queryParameters: teamId?.isNotEmpty == true 
-              ? {'teamId': teamId!.toUpperCase()}
-              : null,
+            queryParameters:
+                teamId?.isNotEmpty == true
+                    ? {'teamId': teamId!.toUpperCase()}
+                    : null,
           );
-          
+
           AppLogger.debug('Making GET request to: $uri');
-          
+
           final response = await client
               .get(
                 uri,
@@ -663,7 +665,7 @@ class SupabaseService {
                 },
               )
               .timeout(const Duration(seconds: 10));
-              
+
           // Log the first 200 characters of response for debugging
           final responsePreview =
               response.body.length > 200
@@ -760,6 +762,147 @@ class SupabaseService {
               'API error: ${response.statusCode} - ${response.body}',
             );
           }
+        } finally {
+          client.close();
+        }
+      } catch (e) {
+        retryCount++;
+        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        if (retryCount >= _maxRetries) {
+          throw Exception(
+            'Failed after $_maxRetries attempts: ${e.toString()}',
+          );
+        }
+        await Future.delayed(_retryDelay * retryCount);
+      }
+    }
+    return [];
+  }
+
+  /// Fetch roster information from the edge function with retry logic
+  static Future<List<Roster>> getRoster({
+    String? teamId, // This is team.id from the teams table
+    int page = 1,
+    int pageSize = 100,
+  }) async {
+    int retryCount = 0;
+    while (retryCount < _maxRetries) {
+      try {
+        final http.Client client = http.Client();
+        try {
+          AppLogger.debug(
+            'Starting getRoster request with page=$page, pageSize=$pageSize',
+          );
+
+          final String normalizedTeamId = teamId?.toString() ?? '';
+          AppLogger.debug('Using teamId for roster request: $normalizedTeamId');
+
+          // Build URI with query parameters
+          final uri = Uri.parse(
+            'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/roster',
+          ).replace(
+            queryParameters: {
+              if (normalizedTeamId.isNotEmpty)
+                'teamId': normalizedTeamId, // Changed from 'id' to 'teamId'
+              'page': page.toString(),
+              'page_size': pageSize.toString(),
+            },
+          );
+
+          AppLogger.debug('Making request to: $uri');
+
+          final response = await client
+              .get(
+                uri,
+                headers: {
+                  'Authorization': 'Bearer ${AppConfig.apiKey}',
+                  'Content-Type': 'application/json',
+                },
+              )
+              .timeout(const Duration(seconds: 15)); // Increased timeout
+
+          AppLogger.debug('Response status code: ${response.statusCode}');
+          AppLogger.debug('Response headers: ${response.headers}');
+
+          if (response.statusCode == 200) {
+            final responseBody = response.body;
+            AppLogger.debug(
+              'Raw API response: $responseBody',
+            ); // Log full response for debugging
+
+            try {
+              final jsonResponse = jsonDecode(responseBody);
+              AppLogger.debug('Successfully decoded JSON response');
+
+              List<dynamic> rosterData;
+              if (jsonResponse is Map<String, dynamic> &&
+                  jsonResponse.containsKey('data')) {
+                rosterData = jsonResponse['data'];
+                AppLogger.debug('Found roster data in nested format');
+              } else if (jsonResponse is List) {
+                rosterData = jsonResponse;
+                AppLogger.debug('Found roster data as direct list');
+              } else {
+                AppLogger.error('Unexpected response format', jsonResponse);
+                throw Exception(
+                  'Unexpected response format: ${jsonResponse.runtimeType}',
+                );
+              }
+
+              AppLogger.debug('Received ${rosterData.length} roster entries');
+              if (rosterData.isNotEmpty) {
+                AppLogger.debug('Sample roster entry: ${rosterData.first}');
+              }
+
+              final roster =
+                  rosterData
+                      .map((json) {
+                        try {
+                          if (json is! Map<String, dynamic>) {
+                            AppLogger.error(
+                              'Invalid roster entry format',
+                              json,
+                            );
+                            return null;
+                          }
+
+                          // Log the raw JSON before parsing
+                          AppLogger.debug('Parsing roster entry: $json');
+
+                          final result = Roster.fromJson(json);
+                          AppLogger.debug(
+                            'Successfully parsed roster entry with ID: ${result.id} and teamId: ${result.teamId}',
+                          );
+                          return result;
+                        } catch (e) {
+                          AppLogger.error(
+                            'Error parsing roster entry: $json',
+                            e,
+                          );
+                          return null;
+                        }
+                      })
+                      .where((r) => r != null)
+                      .cast<Roster>()
+                      .toList();
+
+              AppLogger.debug(
+                'Successfully created ${roster.length} Roster objects for team $normalizedTeamId',
+              );
+              return roster;
+            } catch (e) {
+              AppLogger.error('JSON parsing error', e);
+              AppLogger.debug('Response that failed to parse: $responseBody');
+              throw Exception('Failed to parse server response: $e');
+            }
+          } else {
+            final error = 'API error ${response.statusCode} - ${response.body}';
+            AppLogger.error(error, 'Headers: ${response.headers}');
+            throw Exception(error);
+          }
+        } catch (e) {
+          AppLogger.error('Request error', e);
+          rethrow;
         } finally {
           client.close();
         }

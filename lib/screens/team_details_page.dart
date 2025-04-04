@@ -10,6 +10,7 @@ import 'package:app/utils/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app/widgets/custom_app_bar.dart';
 import 'package:app/widgets/team_articles_slideshow.dart';
+import 'package:app/widgets/roster_tab_view.dart';
 
 class TeamDetailsPage extends StatefulWidget {
   final Team team;
@@ -19,7 +20,9 @@ class TeamDetailsPage extends StatefulWidget {
   TeamDetailsPageState createState() => TeamDetailsPageState();
 }
 
-class TeamDetailsPageState extends State<TeamDetailsPage> {
+class TeamDetailsPageState extends State<TeamDetailsPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   List<Article> _articles = [];
   List<ArticleTicker> _teamArticleTickers = [];
   bool _isLoading = true;
@@ -31,6 +34,7 @@ class TeamDetailsPageState extends State<TeamDetailsPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadTeamArticles();
     _loadArticles();
     _setupRealtimeSubscription();
@@ -38,6 +42,7 @@ class TeamDetailsPageState extends State<TeamDetailsPage> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _teamArticlesSubscription?.unsubscribe();
     _teamArticlesSubscription = null;
     super.dispose();
@@ -355,7 +360,6 @@ class TeamDetailsPageState extends State<TeamDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final isWeb = MediaQuery.of(context).size.width > 600;
-
     return Scaffold(
       appBar: const CustomAppBar(),
       backgroundColor: Colors.white,
@@ -371,63 +375,74 @@ class TeamDetailsPageState extends State<TeamDetailsPage> {
               ),
               child: Column(
                 children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isWeb ? 24.0 : 8.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: 20,
+                            left: 20,
+                            right: 20,
+                          ),
+                          child: Hero(
+                            tag: 'team-logo-${widget.team.teamId}',
+                            child: Image.asset(
+                              widget.team.logoPath,
+                              height: 120,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.sports_football,
+                                  size: 120,
+                                  color: Colors.grey[400],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        TabBar(
+                          controller: _tabController,
+                          tabs: const [Tab(text: 'NEWS'), Tab(text: 'ROSTER')],
+                        ),
+                      ],
+                    ),
+                  ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isWeb ? 24.0 : 8.0,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 20,
-                                left: 20,
-                                right: 20,
-                              ),
-                              child: Hero(
-                                tag: 'team-logo-${widget.team.teamId}',
-                                child: Image.asset(
-                                  widget.team.logoPath,
-                                  height: 120,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.sports_football,
-                                      size: 120,
-                                      color: Colors.grey[400],
-                                    );
-                                  },
-                                ),
-                              ),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // News Tab
+                        SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isWeb ? 24.0 : 8.0,
                             ),
-                            _buildTeamArticlesSection(),
-                            Divider(height: 1, color: Colors.grey.shade300),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14.0,
-                                horizontal: 20.0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [],
-                              ),
+                            child: Column(
+                              children: [
+                                _buildTeamArticlesSection(),
+                                if (_isLoading)
+                                  Center(
+                                    child: CircularProgressIndicator(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  )
+                                else if (_errorMessage != null)
+                                  _buildErrorState()
+                                else
+                                  _buildArticlesList(),
+                                const SizedBox(height: 32),
+                              ],
                             ),
-                            if (_isLoading)
-                              Center(
-                                child: CircularProgressIndicator(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              )
-                            else if (_errorMessage != null)
-                              _buildErrorState()
-                            else
-                              _buildArticlesList(),
-                            const SizedBox(height: 32),
-                          ],
+                          ),
                         ),
-                      ),
+                        // Roster Tab
+                        RosterTabView(teamId: widget.team.teamId),
+                      ],
                     ),
                   ),
                 ],
