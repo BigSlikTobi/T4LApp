@@ -5,6 +5,9 @@ import 'package:app/utils/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 
+// Debug toggle for ArticleTickerList
+const bool _debugArticleTickerList = false;
+
 class ArticleTickerList extends StatefulWidget {
   final String? teamId;
 
@@ -31,20 +34,30 @@ class _ArticleTickerListState extends State<ArticleTickerList> {
         _isLoading = true;
         _errorMessage = null;
       });
-
-      AppLogger.debug('Loading article tickers for team: ${widget.teamId}');
+      if (_debugArticleTickerList) {
+        AppLogger.debug(
+          '[ArticleTickerList] Starting to load article tickers for team: ${widget.teamId}',
+        );
+      }
       final tickers = await SupabaseService.getArticleTickers(
         teamId: widget.teamId,
       );
-
+      if (_debugArticleTickerList) {
+        AppLogger.debug(
+          '[ArticleTickerList] Successfully loaded ${tickers.length} article tickers',
+        );
+      }
       setState(() {
         _articleTickers = tickers;
         _isLoading = false;
       });
-
-      AppLogger.debug('Loaded ${tickers.length} article tickers');
     } catch (e) {
-      AppLogger.error('Error loading article tickers', e);
+      if (_debugArticleTickerList) {
+        AppLogger.debug(
+          '[ArticleTickerList] Error occurred while loading tickers: ${e.toString()}',
+        );
+      }
+      AppLogger.error('[ArticleTickerList] Error loading article tickers', e);
       setState(() {
         _errorMessage = 'Failed to load tickers: ${e.toString()}';
         _isLoading = false;
@@ -58,6 +71,12 @@ class _ArticleTickerListState extends State<ArticleTickerList> {
     final languageProvider = Provider.of<LanguageProvider>(context);
     final isEnglish =
         languageProvider.currentLanguage == LanguageProvider.english;
+
+    if (_debugArticleTickerList) {
+      AppLogger.debug(
+        '[ArticleTickerList] Building widget with language: ${isEnglish ? 'English' : 'German'}',
+      );
+    }
 
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -121,6 +140,11 @@ class _ArticleTickerListState extends State<ArticleTickerList> {
       itemCount: _articleTickers.length,
       itemBuilder: (context, index) {
         final ticker = _articleTickers[index];
+        if (_debugArticleTickerList && index == 0) {
+          AppLogger.debug(
+            '[ArticleTickerList] Rendering first ticker with headline: ${isEnglish ? ticker.englishHeadline : ticker.germanHeadline}',
+          );
+        }
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           elevation: 2,

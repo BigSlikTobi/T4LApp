@@ -8,6 +8,10 @@ import 'package:app/models/article_ticker.dart';
 import 'package:app/models/roster.dart';
 
 class SupabaseService {
+  static const bool _enableDebugLogs =
+      false; // Toggle for controlling debug logs
+  static const String _debugPrefix =
+      '[SupabaseService] '; // Prefix for debug logs
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 1);
 
@@ -25,7 +29,11 @@ class SupabaseService {
   }) {
     // Clean up existing subscription
     if (_articleSubscription != null) {
-      AppLogger.debug('Cleaning up existing article subscription');
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Cleaning up existing article subscription',
+        );
+      }
       _articleSubscription?.unsubscribe();
       _articleSubscription = null;
     }
@@ -36,9 +44,11 @@ class SupabaseService {
             ? 'public:NewsArticles:${team.toUpperCase()}'
             : 'public:NewsArticles:all';
 
-    AppLogger.debug(
-      'Creating new article subscription on channel: $channelName',
-    );
+    if (_enableDebugLogs) {
+      AppLogger.debug(
+        '${_debugPrefix}Creating new article subscription on channel: $channelName',
+      );
+    }
 
     try {
       final channel = supabase
@@ -56,20 +66,24 @@ class SupabaseService {
                     )
                     : null,
             callback: (payload) {
-              AppLogger.debug(
-                'Realtime update received: ${payload.eventType} on ${payload.table}',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Realtime update received: ${payload.eventType} on ${payload.table}',
+                );
+              }
               if (onArticlesUpdate != null) {
                 getArticles(team: team, archived: archived)
                     .then((articles) {
-                      AppLogger.debug(
-                        'Fetched ${articles.length} articles after realtime update',
-                      );
+                      if (_enableDebugLogs) {
+                        AppLogger.debug(
+                          '${_debugPrefix}Fetched ${articles.length} articles after realtime update',
+                        );
+                      }
                       onArticlesUpdate(articles);
                     })
                     .catchError((error) {
                       AppLogger.error(
-                        'Error fetching articles after realtime update',
+                        '${_debugPrefix}Error fetching articles after realtime update',
                         error,
                       );
                     });
@@ -79,38 +93,60 @@ class SupabaseService {
 
       // Subscribe with robust error handling and reconnection logic
       channel.subscribe((status, [error]) {
-        AppLogger.debug('Channel $channelName status: $status');
+        if (_enableDebugLogs) {
+          AppLogger.debug(
+            '${_debugPrefix}Channel $channelName status: $status',
+          );
+        }
 
         if (status == RealtimeSubscribeStatus.subscribed) {
-          AppLogger.debug('Successfully subscribed to $channelName');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Successfully subscribed to $channelName',
+            );
+          }
         }
 
         if (error != null) {
-          AppLogger.error('Subscription error on $channelName', error);
-          AppLogger.error('Error details: ${error.toString()}');
+          AppLogger.error(
+            '${_debugPrefix}Subscription error on $channelName',
+            error,
+          );
+          AppLogger.error('${_debugPrefix}Error details: ${error.toString()}');
 
           // Attempt to reconnect with exponential backoff
           Future.delayed(Duration(seconds: 5), () {
             if (_articleSubscription == channel &&
                 supabase.auth.currentSession != null) {
-              AppLogger.debug('Attempting to reconnect channel: $channelName');
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Attempting to reconnect channel: $channelName',
+                );
+              }
 
               // Try to refresh the Supabase session if applicable
               try {
                 if (supabase.auth.currentSession?.accessToken != null) {
-                  AppLogger.debug(
-                    'Refreshing Supabase session before reconnecting',
-                  );
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Refreshing Supabase session before reconnecting',
+                    );
+                  }
                   supabase.auth.refreshSession();
                 }
               } catch (refreshError) {
-                AppLogger.error('Error refreshing session', refreshError);
+                AppLogger.error(
+                  '${_debugPrefix}Error refreshing session',
+                  refreshError,
+                );
               }
 
               channel.subscribe((newStatus, [newError]) {
-                AppLogger.debug(
-                  'Reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
-                );
+                if (_enableDebugLogs) {
+                  AppLogger.debug(
+                    '${_debugPrefix}Reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
+                  );
+                }
               });
             }
           });
@@ -120,7 +156,7 @@ class SupabaseService {
       _articleSubscription = channel;
       return channel;
     } catch (e) {
-      AppLogger.error('Error creating channel $channelName', e);
+      AppLogger.error('${_debugPrefix}Error creating channel $channelName', e);
       rethrow;
     }
   }
@@ -132,7 +168,11 @@ class SupabaseService {
   }) {
     // Clean up existing subscription
     if (_teamArticleSubscription != null) {
-      AppLogger.debug('Cleaning up existing team article subscription');
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Cleaning up existing team article subscription',
+        );
+      }
       _teamArticleSubscription?.unsubscribe();
       _teamArticleSubscription = null;
     }
@@ -143,9 +183,11 @@ class SupabaseService {
             ? 'public:TeamNewsArticles:${team.toUpperCase()}'
             : 'public:TeamNewsArticles:all';
 
-    AppLogger.debug(
-      'Creating new team articles subscription on channel: $channelName',
-    );
+    if (_enableDebugLogs) {
+      AppLogger.debug(
+        '${_debugPrefix}Creating new team articles subscription on channel: $channelName',
+      );
+    }
 
     try {
       final channel = supabase
@@ -163,20 +205,24 @@ class SupabaseService {
                     )
                     : null,
             callback: (payload) {
-              AppLogger.debug(
-                'Team article realtime update received: ${payload.eventType} on ${payload.table}',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Team article realtime update received: ${payload.eventType} on ${payload.table}',
+                );
+              }
               if (onTeamArticlesUpdate != null) {
                 getTeamArticles(teamId: team)
                     .then((teamArticles) {
-                      AppLogger.debug(
-                        'Fetched ${teamArticles.length} team articles after realtime update',
-                      );
+                      if (_enableDebugLogs) {
+                        AppLogger.debug(
+                          '${_debugPrefix}Fetched ${teamArticles.length} team articles after realtime update',
+                        );
+                      }
                       onTeamArticlesUpdate(teamArticles);
                     })
                     .catchError((error) {
                       AppLogger.error(
-                        'Error fetching team articles after realtime update',
+                        '${_debugPrefix}Error fetching team articles after realtime update',
                         error,
                       );
                     });
@@ -186,48 +232,60 @@ class SupabaseService {
 
       // Subscribe with robust error handling and reconnection logic
       channel.subscribe((status, [error]) {
-        AppLogger.debug('Team articles channel $channelName status: $status');
+        if (_enableDebugLogs) {
+          AppLogger.debug(
+            '${_debugPrefix}Team articles channel $channelName status: $status',
+          );
+        }
 
         if (status == RealtimeSubscribeStatus.subscribed) {
-          AppLogger.debug(
-            'Successfully subscribed to team articles channel $channelName',
-          );
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Successfully subscribed to team articles channel $channelName',
+            );
+          }
         }
 
         if (error != null) {
           AppLogger.error(
-            'Team articles subscription error on $channelName',
+            '${_debugPrefix}Team articles subscription error on $channelName',
             error,
           );
-          AppLogger.error('Error details: ${error.toString()}');
+          AppLogger.error('${_debugPrefix}Error details: ${error.toString()}');
 
           // Attempt to reconnect with exponential backoff
           Future.delayed(Duration(seconds: 5), () {
             if (_teamArticleSubscription == channel &&
                 supabase.auth.currentSession != null) {
-              AppLogger.debug(
-                'Attempting to reconnect team articles channel: $channelName',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Attempting to reconnect team articles channel: $channelName',
+                );
+              }
 
               // Try to refresh the Supabase session if applicable
               try {
                 if (supabase.auth.currentSession?.accessToken != null) {
-                  AppLogger.debug(
-                    'Refreshing Supabase session before reconnecting team channel',
-                  );
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Refreshing Supabase session before reconnecting team channel',
+                    );
+                  }
                   supabase.auth.refreshSession();
                 }
               } catch (refreshError) {
                 AppLogger.error(
-                  'Error refreshing session for team channel',
+                  '${_debugPrefix}Error refreshing session for team channel',
                   refreshError,
                 );
               }
 
               channel.subscribe((newStatus, [newError]) {
-                AppLogger.debug(
-                  'Team articles reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
-                );
+                if (_enableDebugLogs) {
+                  AppLogger.debug(
+                    '${_debugPrefix}Team articles reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
+                  );
+                }
               });
             }
           });
@@ -237,7 +295,10 @@ class SupabaseService {
       _teamArticleSubscription = channel;
       return channel;
     } catch (e) {
-      AppLogger.error('Error creating team articles channel $channelName', e);
+      AppLogger.error(
+        '${_debugPrefix}Error creating team articles channel $channelName',
+        e,
+      );
       rethrow;
     }
   }
@@ -249,7 +310,11 @@ class SupabaseService {
   }) {
     // Clean up existing subscription
     if (_articleTickerSubscription != null) {
-      AppLogger.debug('Cleaning up existing article ticker subscription');
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Cleaning up existing article ticker subscription',
+        );
+      }
       _articleTickerSubscription?.unsubscribe();
       _articleTickerSubscription = null;
     }
@@ -260,9 +325,11 @@ class SupabaseService {
             ? 'public:ArticleTickers:${teamId.toUpperCase()}'
             : 'public:ArticleTickers:all';
 
-    AppLogger.debug(
-      'Creating new article tickers subscription on channel: $channelName',
-    );
+    if (_enableDebugLogs) {
+      AppLogger.debug(
+        '${_debugPrefix}Creating new article tickers subscription on channel: $channelName',
+      );
+    }
 
     try {
       final channel = supabase
@@ -280,20 +347,24 @@ class SupabaseService {
                     )
                     : null,
             callback: (payload) {
-              AppLogger.debug(
-                'Article ticker realtime update received: ${payload.eventType} on ${payload.table}',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Article ticker realtime update received: ${payload.eventType} on ${payload.table}',
+                );
+              }
               if (onArticleTickersUpdate != null) {
                 getArticleTickers(teamId: teamId)
                     .then((tickers) {
-                      AppLogger.debug(
-                        'Fetched ${tickers.length} article tickers after realtime update',
-                      );
+                      if (_enableDebugLogs) {
+                        AppLogger.debug(
+                          '${_debugPrefix}Fetched ${tickers.length} article tickers after realtime update',
+                        );
+                      }
                       onArticleTickersUpdate(tickers);
                     })
                     .catchError((error) {
                       AppLogger.error(
-                        'Error fetching article tickers after realtime update',
+                        '${_debugPrefix}Error fetching article tickers after realtime update',
                         error,
                       );
                     });
@@ -303,48 +374,60 @@ class SupabaseService {
 
       // Subscribe with robust error handling and reconnection logic
       channel.subscribe((status, [error]) {
-        AppLogger.debug('Article tickers channel $channelName status: $status');
+        if (_enableDebugLogs) {
+          AppLogger.debug(
+            '${_debugPrefix}Article tickers channel $channelName status: $status',
+          );
+        }
 
         if (status == RealtimeSubscribeStatus.subscribed) {
-          AppLogger.debug(
-            'Successfully subscribed to article tickers channel $channelName',
-          );
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Successfully subscribed to article tickers channel $channelName',
+            );
+          }
         }
 
         if (error != null) {
           AppLogger.error(
-            'Article tickers subscription error on $channelName',
+            '${_debugPrefix}Article tickers subscription error on $channelName',
             error,
           );
-          AppLogger.error('Error details: ${error.toString()}');
+          AppLogger.error('${_debugPrefix}Error details: ${error.toString()}');
 
           // Attempt to reconnect with exponential backoff
           Future.delayed(Duration(seconds: 5), () {
             if (_articleTickerSubscription == channel &&
                 supabase.auth.currentSession != null) {
-              AppLogger.debug(
-                'Attempting to reconnect article tickers channel: $channelName',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Attempting to reconnect article tickers channel: $channelName',
+                );
+              }
 
               // Try to refresh the Supabase session if applicable
               try {
                 if (supabase.auth.currentSession?.accessToken != null) {
-                  AppLogger.debug(
-                    'Refreshing Supabase session before reconnecting tickers channel',
-                  );
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Refreshing Supabase session before reconnecting tickers channel',
+                    );
+                  }
                   supabase.auth.refreshSession();
                 }
               } catch (refreshError) {
                 AppLogger.error(
-                  'Error refreshing session for tickers channel',
+                  '${_debugPrefix}Error refreshing session for tickers channel',
                   refreshError,
                 );
               }
 
               channel.subscribe((newStatus, [newError]) {
-                AppLogger.debug(
-                  'Article tickers reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
-                );
+                if (_enableDebugLogs) {
+                  AppLogger.debug(
+                    '${_debugPrefix}Article tickers reconnection status: $newStatus, error: ${newError != null ? newError.toString() : "none"}',
+                  );
+                }
               });
             }
           });
@@ -354,7 +437,10 @@ class SupabaseService {
       _articleTickerSubscription = channel;
       return channel;
     } catch (e) {
-      AppLogger.error('Error creating article tickers channel $channelName', e);
+      AppLogger.error(
+        '${_debugPrefix}Error creating article tickers channel $channelName',
+        e,
+      );
       rethrow;
     }
   }
@@ -370,16 +456,22 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          //AppLogger.debug('Starting getArticles request...');
-          //AppLogger.debug(
-          //  'Parameters: team=$team, archived=$archived, excludeIds=$excludeIds',
-          //);
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Starting getArticles request...');
+            AppLogger.debug(
+              '${_debugPrefix}Parameters: team=$team, archived=$archived, excludeIds=$excludeIds',
+            );
+          }
 
           final queryParams = <String, String>{'archived': archived.toString()};
           if (team?.isNotEmpty == true) {
             final normalizedTeamId = team!.toUpperCase();
             queryParams['teamId'] = normalizedTeamId;
-            //AppLogger.debug('Added team filter: $normalizedTeamId');
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Added team filter: $normalizedTeamId',
+              );
+            }
           }
 
           if (excludeIds?.isNotEmpty == true) {
@@ -390,10 +482,12 @@ class SupabaseService {
             AppConfig.edgeFunctionUrl,
           ).replace(queryParameters: queryParams);
 
-          //AppLogger.debug('Making request to: $uri');
-          //AppLogger.debug(
-          //  'Headers: Authorization: Bearer ${AppConfig.apiKey.substring(0, 4)}... (truncated)',
-          //);
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Making request to: $uri');
+            AppLogger.debug(
+              '${_debugPrefix}Headers: Authorization: Bearer ${AppConfig.apiKey.substring(0, 4)}... (truncated)',
+            );
+          }
 
           final response = await client
               .get(
@@ -405,40 +499,63 @@ class SupabaseService {
               )
               .timeout(const Duration(seconds: 10));
 
-          //AppLogger.debug('Response status code: ${response.statusCode}');
-          //AppLogger.debug('Response headers: ${response.headers}');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Response status code: ${response.statusCode}',
+            );
+            AppLogger.debug(
+              '${_debugPrefix}Response headers: ${response.headers}',
+            );
+          }
 
           if (response.statusCode == 200) {
-            //AppLogger.debug('Raw API response: ${response.body}');
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Raw API response: ${response.body}',
+              );
+            }
             final List<dynamic> jsonData = jsonDecode(response.body);
-            //AppLogger.debug('Successfully parsed JSON data');
-            //AppLogger.debug('Received ${jsonData.length} articles from API');
+            if (_enableDebugLogs) {
+              AppLogger.debug('${_debugPrefix}Successfully parsed JSON data');
+              AppLogger.debug(
+                '${_debugPrefix}Received ${jsonData.length} articles from API',
+              );
+            }
 
             // Log first article as sample if available
             if (jsonData.isNotEmpty) {
-              //AppLogger.debug('Sample article data: ${jsonData[0]}');
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Sample article data: ${jsonData[0]}',
+                );
+              }
             } else {
-              //AppLogger.debug('No articles received from API');
+              if (_enableDebugLogs) {
+                AppLogger.debug('${_debugPrefix}No articles received from API');
+              }
             }
 
             // Validate teamId filter if applicable
             if (team?.isNotEmpty == true) {
-              jsonData
-                  .where(
-                    (article) =>
-                        article['teamId']?.toString().toUpperCase() ==
-                        team!.toUpperCase(),
-                  )
-                  .length;
-              //AppLogger.debug(
-              //  'Found $filteredCount articles matching teamId: $team',
-              //);
+              final filteredCount =
+                  jsonData
+                      .where(
+                        (article) =>
+                            article['teamId']?.toString().toUpperCase() ==
+                            team!.toUpperCase(),
+                      )
+                      .length;
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Found $filteredCount articles matching teamId: $team',
+                );
+              }
             }
 
             return jsonData.cast<Map<String, dynamic>>();
           } else {
             AppLogger.error(
-              'API error ${response.statusCode}',
+              '${_debugPrefix}API error ${response.statusCode}',
               'Response body: ${response.body}\nHeaders: ${response.headers}',
             );
             throw Exception(
@@ -450,7 +567,10 @@ class SupabaseService {
         }
       } catch (e) {
         retryCount++;
-        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        AppLogger.error(
+          '${_debugPrefix}Error in attempt $retryCount: ${e.toString()}',
+          e,
+        );
         if (retryCount >= _maxRetries) {
           throw Exception(
             'Failed after $_maxRetries attempts: ${e.toString()}',
@@ -469,13 +589,17 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          AppLogger.debug('Starting getTeams request...');
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Starting getTeams request...');
+          }
 
           final uri = Uri.parse(
             'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/teams',
           );
 
-          AppLogger.debug('Making request to: $uri');
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Making request to: $uri');
+          }
 
           final response = await client
               .post(
@@ -488,17 +612,29 @@ class SupabaseService {
               )
               .timeout(const Duration(seconds: 10));
 
-          AppLogger.debug('Response status code: ${response.statusCode}');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Response status code: ${response.statusCode}',
+            );
+          }
 
           if (response.statusCode == 200) {
-            AppLogger.debug('Raw API response: ${response.body}');
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Raw API response: ${response.body}',
+              );
+            }
             final jsonResponse = jsonDecode(response.body);
 
             if (jsonResponse is Map<String, dynamic> &&
                 jsonResponse.containsKey('data')) {
               final List<dynamic> teamsData = jsonResponse['data'];
-              AppLogger.debug('Successfully parsed JSON data');
-              AppLogger.debug('Received ${teamsData.length} teams from API');
+              if (_enableDebugLogs) {
+                AppLogger.debug('${_debugPrefix}Successfully parsed JSON data');
+                AppLogger.debug(
+                  '${_debugPrefix}Received ${teamsData.length} teams from API',
+                );
+              }
 
               final teams =
                   teamsData
@@ -506,25 +642,28 @@ class SupabaseService {
                       .map((json) => team_model.Team.fromJson(json))
                       .toList();
 
-              AppLogger.debug(
-                'Successfully created ${teams.length} Team objects',
-              );
-
-              // Log sample team data for debugging
-              if (teams.isNotEmpty) {
-                AppLogger.debug('Sample team: ${teams.first}');
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Successfully created ${teams.length} Team objects',
+                );
+                if (teams.isNotEmpty) {
+                  AppLogger.debug('${_debugPrefix}Sample team: ${teams.first}');
+                }
               }
 
               return teams;
             } else {
-              AppLogger.error('Unexpected response format', jsonResponse);
+              AppLogger.error(
+                '${_debugPrefix}Unexpected response format',
+                jsonResponse,
+              );
               throw Exception(
                 'Unexpected response format: ${jsonResponse.runtimeType}',
               );
             }
           } else {
             AppLogger.error(
-              'API error ${response.statusCode}',
+              '${_debugPrefix}API error ${response.statusCode}',
               'Response body: ${response.body}\nHeaders: ${response.headers}',
             );
             throw Exception(
@@ -536,7 +675,10 @@ class SupabaseService {
         }
       } catch (e) {
         retryCount++;
-        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        AppLogger.error(
+          '${_debugPrefix}Error in attempt $retryCount: ${e.toString()}',
+          e,
+        );
         if (retryCount >= _maxRetries) {
           throw Exception(
             'Failed after $_maxRetries attempts: ${e.toString()}',
@@ -557,7 +699,11 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          AppLogger.debug('Starting getTeamArticles request...');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Starting getTeamArticles request...',
+            );
+          }
 
           final uri = Uri.parse(
             'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/teamArticles',
@@ -567,12 +713,18 @@ class SupabaseService {
           Map<String, dynamic> requestBody = {"name": "Functions"};
           if (teamId?.isNotEmpty == true) {
             requestBody["team"] = teamId!.toUpperCase();
-            AppLogger.debug(
-              'Added team filter for team articles: ${teamId.toUpperCase()}',
-            );
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Added team filter for team articles: ${teamId.toUpperCase()}',
+              );
+            }
           }
 
-          AppLogger.debug('Making request to: $uri with body: $requestBody');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Making request to: $uri with body: $requestBody',
+            );
+          }
 
           final response = await client
               .post(
@@ -585,10 +737,18 @@ class SupabaseService {
               )
               .timeout(const Duration(seconds: 10));
 
-          AppLogger.debug('Response status code: ${response.statusCode}');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Response status code: ${response.statusCode}',
+            );
+          }
 
           if (response.statusCode == 200) {
-            AppLogger.debug('Raw API response: ${response.body}');
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Raw API response: ${response.body}',
+              );
+            }
             final jsonResponse = jsonDecode(response.body);
 
             List<dynamic> articlesData;
@@ -603,15 +763,17 @@ class SupabaseService {
               );
             }
 
-            AppLogger.debug('Successfully parsed JSON data');
-            AppLogger.debug(
-              'Received ${articlesData.length} team articles from API',
-            );
+            if (_enableDebugLogs) {
+              AppLogger.debug('${_debugPrefix}Successfully parsed JSON data');
+              AppLogger.debug(
+                '${_debugPrefix}Received ${articlesData.length} team articles from API',
+              );
+            }
 
             return articlesData.cast<Map<String, dynamic>>();
           } else {
             AppLogger.error(
-              'API error ${response.statusCode}',
+              '${_debugPrefix}API error ${response.statusCode}',
               'Response body: ${response.body}\nHeaders: ${response.headers}',
             );
             throw Exception(
@@ -623,7 +785,10 @@ class SupabaseService {
         }
       } catch (e) {
         retryCount++;
-        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        AppLogger.error(
+          '${_debugPrefix}Error in attempt $retryCount: ${e.toString()}',
+          e,
+        );
         if (retryCount >= _maxRetries) {
           throw Exception(
             'Failed after $_maxRetries attempts: ${e.toString()}',
@@ -642,7 +807,11 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          AppLogger.debug('Starting getArticleTickers request...');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Starting getArticleTickers request...',
+            );
+          }
 
           // Build URI with query parameters if teamId is provided
           final uri = Uri.parse(
@@ -654,7 +823,9 @@ class SupabaseService {
                     : null,
           );
 
-          AppLogger.debug('Making GET request to: $uri');
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Making GET request to: $uri');
+          }
 
           final response = await client
               .get(
@@ -671,7 +842,11 @@ class SupabaseService {
               response.body.length > 200
                   ? "${response.body.substring(0, 200)}..."
                   : response.body;
-          AppLogger.debug('API response preview: $responsePreview');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}API response preview: $responsePreview',
+            );
+          }
 
           if (response.statusCode == 200) {
             final jsonResponse = jsonDecode(response.body);
@@ -683,9 +858,11 @@ class SupabaseService {
               if (jsonResponse.containsKey('data')) {
                 tickersData =
                     jsonResponse['data'] is List ? jsonResponse['data'] : [];
-                AppLogger.debug(
-                  'Found data in nested format with ${tickersData.length} items',
-                );
+                if (_enableDebugLogs) {
+                  AppLogger.debug(
+                    '${_debugPrefix}Found data in nested format with ${tickersData.length} items',
+                  );
+                }
               } else {
                 // Try to extract array items from the map
                 final entries =
@@ -695,42 +872,60 @@ class SupabaseService {
                         .toList();
                 if (entries.isNotEmpty) {
                   tickersData = entries;
-                  AppLogger.debug(
-                    'Extracted ${tickersData.length} map entries as tickers',
-                  );
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Extracted ${tickersData.length} map entries as tickers',
+                    );
+                  }
                 } else {
                   // If no entries found, use the map itself as a single item
                   tickersData = [jsonResponse];
-                  AppLogger.debug('Using entire response as a single ticker');
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Using entire response as a single ticker',
+                    );
+                  }
                 }
               }
             } else if (jsonResponse is List) {
               tickersData = jsonResponse;
-              AppLogger.debug(
-                'Response is directly a list with ${tickersData.length} items',
-              );
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Response is directly a list with ${tickersData.length} items',
+                );
+              }
             } else {
               AppLogger.error(
-                'Unexpected response type: ${jsonResponse.runtimeType}',
+                '${_debugPrefix}Unexpected response type: ${jsonResponse.runtimeType}',
               );
               throw Exception(
                 'Unexpected response format: ${jsonResponse.runtimeType}',
               );
             }
 
-            AppLogger.debug('Successfully parsed JSON data');
-            AppLogger.debug(
-              'Received ${tickersData.length} article tickers from API',
-            );
+            if (_enableDebugLogs) {
+              AppLogger.debug('${_debugPrefix}Successfully parsed JSON data');
+              AppLogger.debug(
+                '${_debugPrefix}Received ${tickersData.length} article tickers from API',
+              );
+            }
 
             if (tickersData.isEmpty) {
-              AppLogger.debug('WARNING: Empty ticker data from API');
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}WARNING: Empty ticker data from API',
+                );
+              }
               return [];
             }
 
             // Log sample of first ticker for debugging
             if (tickersData.isNotEmpty) {
-              AppLogger.debug('Sample ticker data: ${tickersData.first}');
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Sample ticker data: ${tickersData.first}',
+                );
+              }
             }
 
             // Convert JSON to ArticleTicker objects with better error handling
@@ -741,21 +936,30 @@ class SupabaseService {
                   final ticker = ArticleTicker.fromJson(json);
                   tickers.add(ticker);
                 } else {
-                  AppLogger.debug('Skipping non-map ticker data: $json');
+                  if (_enableDebugLogs) {
+                    AppLogger.debug(
+                      '${_debugPrefix}Skipping non-map ticker data: $json',
+                    );
+                  }
                 }
               } catch (e) {
-                AppLogger.error('Error parsing individual article ticker', e);
+                AppLogger.error(
+                  '${_debugPrefix}Error parsing individual article ticker',
+                  e,
+                );
                 // Continue processing other tickers even if one fails
               }
             }
 
-            AppLogger.debug(
-              'Successfully created ${tickers.length} ArticleTicker objects',
-            );
+            if (_enableDebugLogs) {
+              AppLogger.debug(
+                '${_debugPrefix}Successfully created ${tickers.length} ArticleTicker objects',
+              );
+            }
             return tickers;
           } else {
             AppLogger.error(
-              'API error ${response.statusCode}',
+              '${_debugPrefix}API error ${response.statusCode}',
               'Response body: ${response.body}\nHeaders: ${response.headers}',
             );
             throw Exception(
@@ -767,7 +971,10 @@ class SupabaseService {
         }
       } catch (e) {
         retryCount++;
-        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        AppLogger.error(
+          '${_debugPrefix}Error in attempt $retryCount: ${e.toString()}',
+          e,
+        );
         if (retryCount >= _maxRetries) {
           throw Exception(
             'Failed after $_maxRetries attempts: ${e.toString()}',
@@ -781,7 +988,7 @@ class SupabaseService {
 
   /// Fetch roster information from the edge function with retry logic
   static Future<List<Roster>> getRoster({
-    String? teamId, // This is team.id from the teams table
+    String? teamId,
     int page = 1,
     int pageSize = 100,
   }) async {
@@ -790,26 +997,36 @@ class SupabaseService {
       try {
         final http.Client client = http.Client();
         try {
-          AppLogger.debug(
-            'Starting getRoster request with page=$page, pageSize=$pageSize',
-          );
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Starting getRoster request');
+            AppLogger.debug(
+              '${_debugPrefix}Parameters: teamId=$teamId, page=$page, pageSize=$pageSize',
+            );
+          }
 
           final String normalizedTeamId = teamId?.toString() ?? '';
-          AppLogger.debug('Using teamId for roster request: $normalizedTeamId');
+          if (_enableDebugLogs && normalizedTeamId.isNotEmpty) {
+            AppLogger.debug(
+              '${_debugPrefix}Using normalized teamId: $normalizedTeamId',
+            );
+          }
 
-          // Build URI with query parameters
           final uri = Uri.parse(
             'https://yqtiuzhedkfacwgormhn.supabase.co/functions/v1/roster',
           ).replace(
             queryParameters: {
-              if (normalizedTeamId.isNotEmpty)
-                'teamId': normalizedTeamId, // Changed from 'id' to 'teamId'
+              if (normalizedTeamId.isNotEmpty) 'teamId': normalizedTeamId,
               'page': page.toString(),
               'page_size': pageSize.toString(),
             },
           );
 
-          AppLogger.debug('Making request to: $uri');
+          if (_enableDebugLogs) {
+            AppLogger.debug('${_debugPrefix}Making request to: $uri');
+            AppLogger.debug(
+              '${_debugPrefix}Request headers: Authorization=Bearer ${AppConfig.apiKey.substring(0, 4)}... (truncated)',
+            );
+          }
 
           final response = await client
               .get(
@@ -819,96 +1036,117 @@ class SupabaseService {
                   'Content-Type': 'application/json',
                 },
               )
-              .timeout(const Duration(seconds: 15)); // Increased timeout
+              .timeout(const Duration(seconds: 15));
 
-          AppLogger.debug('Response status code: ${response.statusCode}');
-          AppLogger.debug('Response headers: ${response.headers}');
+          if (_enableDebugLogs) {
+            AppLogger.debug(
+              '${_debugPrefix}Response status: ${response.statusCode}',
+            );
+            AppLogger.debug(
+              '${_debugPrefix}Response headers: ${response.headers}',
+            );
+          }
 
           if (response.statusCode == 200) {
             final responseBody = response.body;
-            AppLogger.debug(
-              'Raw API response: $responseBody',
-            ); // Log full response for debugging
+            if (_enableDebugLogs) {
+              // Log preview of response for debugging
+              final preview =
+                  responseBody.length > 200
+                      ? "${responseBody.substring(0, 200)}..."
+                      : responseBody;
+              AppLogger.debug('${_debugPrefix}Response preview: $preview');
+            }
 
-            try {
-              final jsonResponse = jsonDecode(responseBody);
-              AppLogger.debug('Successfully decoded JSON response');
+            final jsonResponse = jsonDecode(responseBody);
+            List<dynamic> rosterData;
 
-              List<dynamic> rosterData;
-              if (jsonResponse is Map<String, dynamic> &&
-                  jsonResponse.containsKey('data')) {
-                rosterData = jsonResponse['data'];
-                AppLogger.debug('Found roster data in nested format');
-              } else if (jsonResponse is List) {
-                rosterData = jsonResponse;
-                AppLogger.debug('Found roster data as direct list');
-              } else {
-                AppLogger.error('Unexpected response format', jsonResponse);
-                throw Exception(
-                  'Unexpected response format: ${jsonResponse.runtimeType}',
+            if (jsonResponse is Map<String, dynamic> &&
+                jsonResponse.containsKey('data')) {
+              rosterData = jsonResponse['data'];
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Found nested data with ${rosterData.length} entries',
                 );
               }
-
-              AppLogger.debug('Received ${rosterData.length} roster entries');
-              if (rosterData.isNotEmpty) {
-                AppLogger.debug('Sample roster entry: ${rosterData.first}');
+            } else if (jsonResponse is List) {
+              rosterData = jsonResponse;
+              if (_enableDebugLogs) {
+                AppLogger.debug(
+                  '${_debugPrefix}Found direct list with ${rosterData.length} entries',
+                );
               }
+            } else {
+              throw Exception(
+                'Unexpected response format: ${jsonResponse.runtimeType}',
+              );
+            }
 
-              final roster =
-                  rosterData
-                      .map((json) {
-                        try {
-                          if (json is! Map<String, dynamic>) {
-                            AppLogger.error(
-                              'Invalid roster entry format',
-                              json,
+            if (_enableDebugLogs && rosterData.isNotEmpty) {
+              AppLogger.debug(
+                '${_debugPrefix}Sample roster entry: ${rosterData.first}',
+              );
+            }
+
+            final roster =
+                rosterData
+                    .map((json) {
+                      try {
+                        if (json is! Map<String, dynamic>) {
+                          if (_enableDebugLogs) {
+                            AppLogger.debug(
+                              '${_debugPrefix}Skipping invalid roster entry: $json',
                             );
-                            return null;
                           }
-
-                          // Log the raw JSON before parsing
-                          AppLogger.debug('Parsing roster entry: $json');
-
-                          final result = Roster.fromJson(json);
-                          AppLogger.debug(
-                            'Successfully parsed roster entry with ID: ${result.id} and teamId: ${result.teamId}',
-                          );
-                          return result;
-                        } catch (e) {
-                          AppLogger.error(
-                            'Error parsing roster entry: $json',
-                            e,
-                          );
                           return null;
                         }
-                      })
-                      .where((r) => r != null)
-                      .cast<Roster>()
-                      .toList();
+                        final result = Roster.fromJson(json);
+                        if (_enableDebugLogs) {
+                          AppLogger.debug(
+                            '${_debugPrefix}Parsed roster entry: ID=${result.id}, TeamID=${result.teamId}',
+                          );
+                        }
+                        return result;
+                      } catch (e) {
+                        AppLogger.error(
+                          '${_debugPrefix}Error parsing roster entry',
+                          e,
+                        );
+                        return null;
+                      }
+                    })
+                    .where((r) => r != null)
+                    .cast<Roster>()
+                    .toList();
 
+            if (_enableDebugLogs) {
               AppLogger.debug(
-                'Successfully created ${roster.length} Roster objects for team $normalizedTeamId',
+                '${_debugPrefix}Successfully processed ${roster.length} roster entries',
               );
-              return roster;
-            } catch (e) {
-              AppLogger.error('JSON parsing error', e);
-              AppLogger.debug('Response that failed to parse: $responseBody');
-              throw Exception('Failed to parse server response: $e');
+              AppLogger.debug(
+                '${_debugPrefix}Memory usage stats: ${roster.length} objects created',
+              );
             }
+
+            return roster;
           } else {
-            final error = 'API error ${response.statusCode} - ${response.body}';
-            AppLogger.error(error, 'Headers: ${response.headers}');
-            throw Exception(error);
+            AppLogger.error(
+              '${_debugPrefix}API error ${response.statusCode}',
+              'Response: ${response.body}\nHeaders: ${response.headers}',
+            );
+            throw Exception(
+              'API error: ${response.statusCode} - ${response.body}',
+            );
           }
-        } catch (e) {
-          AppLogger.error('Request error', e);
-          rethrow;
         } finally {
           client.close();
         }
       } catch (e) {
         retryCount++;
-        AppLogger.error('Error in attempt $retryCount: ${e.toString()}', e);
+        AppLogger.error(
+          '${_debugPrefix}Error in attempt $retryCount: ${e.toString()}',
+          e,
+        );
         if (retryCount >= _maxRetries) {
           throw Exception(
             'Failed after $_maxRetries attempts: ${e.toString()}',
@@ -922,13 +1160,40 @@ class SupabaseService {
 
   /// Cleanup method to be called when the app is disposed
   static void dispose() {
-    _articleSubscription?.unsubscribe();
-    _articleSubscription = null;
+    if (_enableDebugLogs) {
+      AppLogger.debug('${_debugPrefix}Starting cleanup of subscriptions');
+    }
 
-    _teamArticleSubscription?.unsubscribe();
-    _teamArticleSubscription = null;
+    if (_articleSubscription != null) {
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Unsubscribing from article subscription',
+        );
+      }
+      _articleSubscription?.unsubscribe();
+      _articleSubscription = null;
+    }
 
-    _articleTickerSubscription?.unsubscribe();
-    _articleTickerSubscription = null;
+    if (_teamArticleSubscription != null) {
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Unsubscribing from team article subscription',
+        );
+      }
+      _teamArticleSubscription?.unsubscribe();
+      _teamArticleSubscription = null;
+    }
+
+    if (_articleTickerSubscription != null) {
+      if (_enableDebugLogs) {
+        AppLogger.debug(
+          '${_debugPrefix}Unsubscribing from article ticker subscription',
+        );
+      }
+      _articleTickerSubscription?.unsubscribe();
+      _articleTickerSubscription = null;
+    }
+
+    if (_enableDebugLogs) AppLogger.debug('${_debugPrefix}Cleanup completed');
   }
 }

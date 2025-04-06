@@ -1,5 +1,8 @@
 import 'package:app/utils/logger.dart';
 
+// Global debug toggle for Article model logging
+bool articleDebugLogging = false;
+
 class Article {
   final int id;
   final String englishHeadline;
@@ -31,90 +34,121 @@ class Article {
   });
 
   factory Article.fromJson(Map<String, dynamic> json) {
-    // Enhanced logging of the full article JSON for debugging
-    // AppLogger.debug('Processing article JSON: ${json.toString()}');
+    if (articleDebugLogging) {
+      AppLogger.debug('[Article] Processing article JSON: ${json.toString()}');
+    }
 
-    // Check multiple possible ID field names
     final possibleIdFields = ['id', 'articleId', 'article_id', 'ID'];
     dynamic rawId;
+    String? usedField;
 
-    // Try each possible ID field
     for (var field in possibleIdFields) {
       if (json.containsKey(field) && json[field] != null) {
         rawId = json[field];
+        usedField = field;
         break;
       }
     }
 
-    // AppLogger.debug(
-    //   'Raw article ID from JSON: $rawId (type: ${rawId?.runtimeType}, field: $usedField)',
-    // );
+    if (articleDebugLogging) {
+      AppLogger.debug(
+        '[Article] Raw article ID from JSON: $rawId (type: ${rawId?.runtimeType}, field: $usedField)',
+      );
+    }
 
     int articleId;
     if (rawId == null) {
-      // If no valid ID field found, generate a unique temporary ID
-      // Use current timestamp + counter to ensure uniqueness
       final tempId = DateTime.now().millisecondsSinceEpoch + (_tempIdCounter++);
       AppLogger.error(
-        'No valid ID found in article JSON. Using temporary ID: $tempId\n'
+        '[Article] No valid ID found in article JSON. Using temporary ID: $tempId\n'
         'Available fields: ${json.keys.join(', ')}',
       );
       articleId = tempId;
     } else if (rawId is int) {
       articleId = rawId;
-      // AppLogger.debug('Using integer ID: $articleId');
+      if (articleDebugLogging) {
+        AppLogger.debug('[Article] Using integer ID: $articleId');
+      }
     } else if (rawId is String) {
       if (rawId.contains('-')) {
-        // UUID format - take last segment and parse as int if possible
         final lastPart = rawId.split('-').last;
         var parsedId = int.tryParse(lastPart);
         if (parsedId != null) {
           articleId = parsedId;
-          // AppLogger.debug(
-          //   'Parsed UUID last segment as ID: $articleId from $rawId',
-          // );
+          if (articleDebugLogging) {
+            AppLogger.debug(
+              '[Article] Parsed UUID last segment as ID: $articleId from $rawId',
+            );
+          }
         } else {
           articleId = rawId.hashCode;
-          // AppLogger.debug('Using hash of UUID as ID: $articleId from $rawId');
+          if (articleDebugLogging) {
+            AppLogger.debug(
+              '[Article] Using hash of UUID as ID: $articleId from $rawId',
+            );
+          }
         }
       } else {
-        // Try parsing numeric string
         var parsedId = int.tryParse(rawId);
         if (parsedId != null) {
           articleId = parsedId;
-          // AppLogger.debug('Parsed numeric ID from string: $articleId');
+          if (articleDebugLogging) {
+            AppLogger.debug(
+              '[Article] Parsed numeric ID from string: $articleId',
+            );
+          }
         } else {
-          // If parsing fails, use hash of the string
           articleId = rawId.hashCode;
-          // AppLogger.debug('Using hash of string ID: $articleId from $rawId');
+          if (articleDebugLogging) {
+            AppLogger.debug(
+              '[Article] Using hash of string ID: $articleId from $rawId',
+            );
+          }
         }
       }
     } else {
-      // For any other type, use toString() and hash + counter to ensure uniqueness
       articleId = rawId.toString().hashCode + (_tempIdCounter++);
-      // AppLogger.debug(
-      //   'Using unique hash of non-string ID: $articleId from $rawId (type: ${rawId.runtimeType})',
-      // );
+      if (articleDebugLogging) {
+        AppLogger.debug(
+          '[Article] Using unique hash of non-string ID: $articleId from $rawId (type: ${rawId.runtimeType})',
+        );
+      }
     }
 
     DateTime? dateTime;
     String? rawDate =
         json['created_at']?.toString() ?? json['createdAt']?.toString();
-    // AppLogger.debug('Article $articleId - Raw date value: $rawDate');
+
+    if (articleDebugLogging) {
+      AppLogger.debug(
+        '[Article] Article $articleId - Raw date value: $rawDate',
+      );
+    }
 
     if (rawDate != null) {
       try {
         dateTime = DateTime.parse(rawDate);
+        if (articleDebugLogging) {
+          AppLogger.debug(
+            '[Article] Successfully parsed date: $dateTime for article $articleId',
+          );
+        }
       } catch (e) {
-        AppLogger.error('Error parsing date for article $articleId', e);
+        AppLogger.error(
+          '[Article] Error parsing date for article $articleId',
+          e,
+        );
       }
     }
 
-    // Ensure we get the teamId value and log it
     String? teamIdValue = json['teamId']?.toString();
-    // AppLogger.debug('Article $articleId - TeamId from JSON: $teamIdValue');
+    if (articleDebugLogging) {
+      AppLogger.debug(
+        '[Article] Article $articleId - TeamId from JSON: $teamIdValue',
+      );
+    }
 
-    return Article(
+    final article = Article(
       id: articleId,
       englishHeadline: json['englishHeadline']?.toString() ?? '',
       germanHeadline: json['germanHeadline']?.toString() ?? '',
@@ -128,6 +162,14 @@ class Article {
           teamIdValue, // Don't force uppercase here since we handle it in the service
       status: json['status']?.toString(),
     );
+
+    if (articleDebugLogging) {
+      AppLogger.debug(
+        '[Article] Created article with ID: $articleId and status: ${article.status}',
+      );
+    }
+
+    return article;
   }
 
   Map<String, dynamic> toJson() {

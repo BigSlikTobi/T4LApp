@@ -1,6 +1,9 @@
 import 'package:app/models/team.dart';
 import 'package:app/utils/logger.dart';
 
+// Global debug toggle for TeamArticle
+bool isTeamArticleDebugEnabled = false;
+
 class TeamArticle {
   final int? id;
   final String? headlineEnglish;
@@ -34,7 +37,11 @@ class TeamArticle {
 
   factory TeamArticle.fromJson(Map<String, dynamic> json) {
     try {
-      AppLogger.debug('Processing team article JSON: ${json.toString()}');
+      if (isTeamArticleDebugEnabled) {
+        AppLogger.debug(
+          '[TeamArticle] Processing team article JSON: ${json.toString()}',
+        );
+      }
 
       // Handle team property which could be a teamId string or object
       Team? team;
@@ -42,9 +49,11 @@ class TeamArticle {
         if (json['team'] is Map<String, dynamic>) {
           team = Team.fromJson(json['team']);
         } else {
-          AppLogger.debug(
-            'Team field is not an object, received: ${json['team']}',
-          );
+          if (isTeamArticleDebugEnabled) {
+            AppLogger.debug(
+              '[TeamArticle] Team field is not an object, received: ${json['team']}',
+            );
+          }
           // Handle string or numeric team ID
           team = Team(
             teamId: json['team'].toString(),
@@ -53,6 +62,12 @@ class TeamArticle {
             conference: '',
           );
         }
+      }
+
+      if (isTeamArticleDebugEnabled) {
+        AppLogger.debug(
+          '[TeamArticle] Creating TeamArticle with team: ${team?.teamId}',
+        );
       }
 
       return TeamArticle(
@@ -73,7 +88,7 @@ class TeamArticle {
       );
     } catch (e, stackTrace) {
       AppLogger.error(
-        'Error parsing team article: $e\nStack trace: $stackTrace\nJSON data: ${json.toString()}',
+        '[TeamArticle] Error parsing team article: $e\nStack trace: $stackTrace\nJSON data: ${json.toString()}',
       );
       rethrow;
     }
@@ -81,6 +96,11 @@ class TeamArticle {
 
   // Convert TeamArticle to ArticleTicker format
   Map<String, dynamic> toArticleTickerJson() {
+    if (isTeamArticleDebugEnabled) {
+      AppLogger.debug(
+        '[TeamArticle] Converting to ArticleTicker format - ID: $id, Team: ${team?.teamId}',
+      );
+    }
     return {
       'id': id ?? 0,
       'englishHeadline': headlineEnglish,
