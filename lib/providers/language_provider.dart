@@ -10,8 +10,8 @@ class LanguageProvider extends ChangeNotifier {
   static const String english = 'en';
   static const String german = 'de';
 
-  // Current language
-  late String _currentLanguage;
+  // Initialize with default value instead of using late
+  String _currentLanguage = english; // Default to English
 
   // Getter for current language
   String get currentLanguage => _currentLanguage;
@@ -44,23 +44,29 @@ class LanguageProvider extends ChangeNotifier {
 
   // Initialize language with saved preference or device language
   Future<void> _initializeLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedLanguage = prefs.getString(_prefsKey);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLanguage = prefs.getString(_prefsKey);
 
-    if (savedLanguage != null) {
-      final decodedLanguage = _decodeText(savedLanguage);
-      if (decodedLanguage == english || decodedLanguage == german) {
-        _currentLanguage = decodedLanguage;
+      String newLanguage;
+      if (savedLanguage != null) {
+        final decodedLanguage = _decodeText(savedLanguage);
+        newLanguage =
+            (decodedLanguage == english || decodedLanguage == german)
+                ? decodedLanguage
+                : _getDeviceLanguage();
       } else {
-        _currentLanguage = _getDeviceLanguage();
+        newLanguage = _getDeviceLanguage();
       }
-    } else {
-      _currentLanguage = _getDeviceLanguage();
-    }
 
-    // Save with proper encoding
-    await prefs.setString(_prefsKey, _encodeText(_currentLanguage));
-    notifyListeners();
+      _currentLanguage = newLanguage;
+      // Save with proper encoding
+      await prefs.setString(_prefsKey, _encodeText(_currentLanguage));
+      notifyListeners();
+    } catch (e) {
+      // Keep default value if initialization fails
+      debugPrint('Error initializing language: $e');
+    }
   }
 
   // Change language method
@@ -71,10 +77,13 @@ class LanguageProvider extends ChangeNotifier {
       _currentLanguage = languageCode;
 
       // Save to SharedPreferences with encoding
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefsKey, _encodeText(languageCode));
-
-      notifyListeners();
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_prefsKey, _encodeText(languageCode));
+        notifyListeners();
+      } catch (e) {
+        debugPrint('Error saving language preference: $e');
+      }
     }
   }
 
