@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app/providers/language_provider.dart';
 
+// Debug toggle for CustomAppBar
+bool customAppBarDebug = false;
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key});
 
@@ -10,6 +13,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (customAppBarDebug) {
+      debugPrint('[CustomAppBar] Building AppBar');
+    }
+
     final languageProvider = Provider.of<LanguageProvider>(context);
     final double baseHeight = kToolbarHeight - 12;
     final double increasedHeight = baseHeight * 1.5;
@@ -26,9 +33,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             'assets/images/T4LLogo.png',
             height: increasedHeight,
             errorBuilder: (context, error, stackTrace) {
-              debugPrint(
-                'Error loading logo asset: $error\nStackTrace: $stackTrace',
-              );
+              if (customAppBarDebug) {
+                debugPrint(
+                  '[CustomAppBar] Error loading logo asset: $error\nStackTrace: $stackTrace',
+                );
+              }
               return const Icon(Icons.error);
             },
           ),
@@ -43,6 +52,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            onOpened: () {
+              if (customAppBarDebug) {
+                debugPrint('[CustomAppBar] Language menu opened');
+              }
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
@@ -57,6 +71,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
             onSelected: (String value) {
+              if (customAppBarDebug) {
+                debugPrint('[CustomAppBar] Language changed to: $value');
+              }
               languageProvider.switchLanguage(value);
             },
             itemBuilder:

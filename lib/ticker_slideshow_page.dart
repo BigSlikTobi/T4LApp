@@ -6,6 +6,9 @@ import 'package:app/providers/language_provider.dart';
 import 'package:app/utils/logger.dart';
 import '../widgets/custom_app_bar.dart';
 
+// Debug toggle for TickerSlideshowPage
+const bool _debugTickerSlideshowPage = false;
+
 class TickerSlideshowPage extends StatefulWidget {
   final List<ArticleTicker> articles;
   const TickerSlideshowPage({super.key, required this.articles});
@@ -23,23 +26,41 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   @override
   void initState() {
     super.initState();
-    AppLogger.debug(
-      'TickerSlideshowPage initializing with ${widget.articles.length} articles',
-    );
+    if (_debugTickerSlideshowPage) {
+      AppLogger.debug(
+        '[TickerSlideshowPage] Initializing with ${widget.articles.length} articles',
+      );
+    }
     _articles = widget.articles;
     _pageController = PageController();
 
     // Set up automatic sliding if there are multiple articles
     if (_articles.length > 1) {
+      if (_debugTickerSlideshowPage) {
+        AppLogger.debug(
+          '[TickerSlideshowPage] Setting up autoplay with ${autoplayInterval.inSeconds}s interval',
+        );
+      }
       Future.delayed(autoplayInterval, _nextPage);
     }
   }
 
   void _nextPage() {
-    if (!mounted) return;
+    if (!mounted) {
+      if (_debugTickerSlideshowPage) {
+        AppLogger.debug(
+          '[TickerSlideshowPage] Skipping page transition - widget not mounted',
+        );
+      }
+      return;
+    }
 
     final nextPage =
         _currentPage + 1 == _articles.length ? 0 : _currentPage + 1;
+    if (_debugTickerSlideshowPage) {
+      AppLogger.debug('[TickerSlideshowPage] Transitioning to page $nextPage');
+    }
+
     _pageController.animateToPage(
       nextPage,
       duration: const Duration(milliseconds: 500),
@@ -52,6 +73,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
 
   @override
   void dispose() {
+    if (_debugTickerSlideshowPage) {
+      AppLogger.debug('[TickerSlideshowPage] Disposing page controller');
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -64,7 +88,10 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
           isEnglish ? DateFormat('MMM d, yyyy') : DateFormat('dd.MM.yyyy');
       return format.format(date);
     } catch (e) {
-      AppLogger.error('Error formatting date: $dateInput', e);
+      AppLogger.error(
+        '[TickerSlideshowPage] Error formatting date: $dateInput',
+        e,
+      );
       return isEnglish ? 'Invalid date' : 'Ungültiges Datum';
     }
   }
@@ -78,7 +105,18 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
     final screenSize = MediaQuery.of(context).size;
     final isWeb = screenSize.width > 600;
 
+    if (_debugTickerSlideshowPage) {
+      AppLogger.debug(
+        '[TickerSlideshowPage] Building with screenSize: ${screenSize.width}x${screenSize.height}, isWeb: $isWeb, language: ${isEnglish ? 'en' : 'de'}',
+      );
+    }
+
     if (_articles.isEmpty) {
+      if (_debugTickerSlideshowPage) {
+        AppLogger.debug(
+          '[TickerSlideshowPage] No articles available to display',
+        );
+      }
       return Scaffold(
         appBar: const CustomAppBar(),
         body: Center(
@@ -102,10 +140,21 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                   PageView.builder(
                     controller: _pageController,
                     itemCount: _articles.length,
-                    onPageChanged:
-                        (index) => setState(() => _currentPage = index),
+                    onPageChanged: (index) {
+                      if (_debugTickerSlideshowPage) {
+                        AppLogger.debug(
+                          '[TickerSlideshowPage] Page changed to index: $index',
+                        );
+                      }
+                      setState(() => _currentPage = index);
+                    },
                     itemBuilder: (context, index) {
                       final article = _articles[index];
+                      if (_debugTickerSlideshowPage) {
+                        AppLogger.debug(
+                          '[TickerSlideshowPage] Building article $index: ${article.englishHeadline}',
+                        );
+                      }
                       return Center(
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
@@ -171,15 +220,29 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
                                       child: Image.network(
                                         article.image2!,
                                         fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (_, __, ___) =>
-                                                _buildFallbackImage(),
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          if (_debugTickerSlideshowPage) {
+                                            AppLogger.debug(
+                                              '[TickerSlideshowPage] Failed to load image for article $index: ${article.image2}',
+                                            );
+                                          }
+                                          return _buildFallbackImage();
+                                        },
                                         loadingBuilder: (
                                           context,
                                           child,
                                           loadingProgress,
                                         ) {
                                           if (loadingProgress == null) {
+                                            if (_debugTickerSlideshowPage) {
+                                              AppLogger.debug(
+                                                '[TickerSlideshowPage] Successfully loaded image for article $index',
+                                              );
+                                            }
                                             return child;
                                           }
                                           return Center(
@@ -256,6 +319,9 @@ class _TickerSlideshowPageState extends State<TickerSlideshowPage> {
   }
 
   Widget _buildFallbackImage() {
+    if (_debugTickerSlideshowPage) {
+      AppLogger.debug('[TickerSlideshowPage] Using fallback image');
+    }
     return Container(
       color: Colors.grey[300],
       child: const Center(

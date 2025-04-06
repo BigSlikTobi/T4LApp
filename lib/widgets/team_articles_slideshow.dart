@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app/ticker_slideshow_page.dart';
 import 'package:app/models/article_ticker.dart';
-import 'package:app/utils/logger.dart'; // Fixed import path
+import 'package:app/utils/logger.dart';
+
+// Global debug toggle for TeamArticlesSlideshow
+const bool _enableTeamArticlesSlideshowDebug = false;
 
 class TeamArticlesSlideshow extends StatelessWidget {
   final List<ArticleTicker> teamArticles;
@@ -16,15 +19,22 @@ class TeamArticlesSlideshow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.debug(
-      'Building TeamArticlesSlideshow with ${teamArticles.length} articles',
-    );
+    if (_enableTeamArticlesSlideshowDebug) {
+      AppLogger.debug(
+        '[TeamArticlesSlideshow] Building widget with ${teamArticles.length} articles',
+      );
+    }
 
     return GestureDetector(
       onTap: () {
         if (teamArticles.isEmpty) {
+          if (_enableTeamArticlesSlideshowDebug) {
+            AppLogger.debug(
+              '[TeamArticlesSlideshow] Attempted to open empty articles list',
+            );
+          }
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('No team articles available'),
               duration: Duration(seconds: 2),
             ),
@@ -33,9 +43,11 @@ class TeamArticlesSlideshow extends StatelessWidget {
         }
 
         HapticFeedback.lightImpact();
-        AppLogger.debug(
-          'Navigating to TickerSlideshowPage with ${teamArticles.length} articles',
-        );
+        if (_enableTeamArticlesSlideshowDebug) {
+          AppLogger.debug(
+            '[TeamArticlesSlideshow] Navigating to TickerSlideshowPage with ${teamArticles.length} articles',
+          );
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => TickerSlideshowPage(articles: teamArticles),
@@ -66,14 +78,19 @@ class TeamArticlesSlideshow extends StatelessWidget {
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
+                  if (_enableTeamArticlesSlideshowDebug) {
+                    AppLogger.debug(
+                      '[TeamArticlesSlideshow] Error loading background image: $error',
+                    );
+                  }
                   AppLogger.error(
-                    'Error loading background image: $error',
+                    '[TeamArticlesSlideshow] Error loading background image: $error',
                     stackTrace,
                   );
                   return Container(
                     height: 300,
                     color: Colors.grey[300],
-                    child: Icon(
+                    child: const Icon(
                       Icons.image_not_supported,
                       size: 50,
                       color: Colors.grey,

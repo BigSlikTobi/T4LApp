@@ -49,6 +49,8 @@ final teamLogoMap = {
   'WSH': 'washington_commanders',
 };
 
+bool _debugLogging = false;
+
 class News extends StatefulWidget {
   const News({super.key});
 
@@ -140,7 +142,11 @@ class _NewsState extends State<News> {
   }
 
   Future<List<Article>> _fetchArticles() async {
-    AppLogger.debug('Fetching articles with teamId filter: "$selectedTeamId"');
+    if (_debugLogging) {
+      AppLogger.debug(
+        '[news.dart] Fetching articles with teamId filter: "$selectedTeamId"',
+      );
+    }
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -153,8 +159,14 @@ class _NewsState extends State<News> {
         archived: showArchived,
       );
 
-      AppLogger.debug('Received ${articlesData.length} articles from service');
-      AppLogger.debug('Filtering for team: ${selectedTeamId ?? "all teams"}');
+      if (_debugLogging) {
+        AppLogger.debug(
+          '[news.dart] Received ${articlesData.length} articles from service',
+        );
+        AppLogger.debug(
+          '[news.dart] Filtering for team: ${selectedTeamId ?? "all teams"}',
+        );
+      }
 
       // Map the JSON data to Article objects and filter by team if selected
       final List<Article> fetchedArticles =
@@ -176,11 +188,15 @@ class _NewsState extends State<News> {
       );
 
       // Log the filtered articles
-      AppLogger.debug('Filtered articles count: ${fetchedArticles.length}');
-      if (selectedTeamId != null) {
+      if (_debugLogging) {
         AppLogger.debug(
-          'Articles for team $selectedTeamId: ${fetchedArticles.length}',
+          '[news.dart] Filtered articles count: ${fetchedArticles.length}',
         );
+        if (selectedTeamId != null) {
+          AppLogger.debug(
+            '[news.dart] Articles for team $selectedTeamId: ${fetchedArticles.length}',
+          );
+        }
       }
 
       // Update the articles list
@@ -204,7 +220,11 @@ class _NewsState extends State<News> {
 
   // Changed to fetch article tickers with retry mechanism
   Future<void> _fetchArticleTickers() async {
-    AppLogger.debug('Starting to fetch article tickers in News widget');
+    if (_debugLogging) {
+      AppLogger.debug(
+        '[news.dart] Starting to fetch article tickers in News widget',
+      );
+    }
 
     // Use a retry mechanism with exponential backoff
     const maxRetries = 3;
@@ -214,26 +234,38 @@ class _NewsState extends State<News> {
     while (!success && retryCount < maxRetries) {
       try {
         // Add more detailed logging about the request
-        AppLogger.debug(
-          'Calling SupabaseService.getArticleTickers with teamId: ${selectedTeamId ?? "null"} (attempt ${retryCount + 1})',
-        );
+        if (_debugLogging) {
+          AppLogger.debug(
+            '[news.dart] Calling SupabaseService.getArticleTickers with teamId: ${selectedTeamId ?? "null"} (attempt ${retryCount + 1})',
+          );
+        }
 
         final tickers = await SupabaseService.getArticleTickers(
           teamId: selectedTeamId,
         );
 
         // More comprehensive logging of the response
-        AppLogger.debug('Received ${tickers.length} tickers from service');
+        if (_debugLogging) {
+          AppLogger.debug(
+            '[news.dart] Received ${tickers.length} tickers from service',
+          );
+        }
 
         if (tickers.isEmpty) {
-          AppLogger.debug('WARNING: Received empty tickers list from Supabase');
+          if (_debugLogging) {
+            AppLogger.debug(
+              '[news.dart] WARNING: Received empty tickers list from Supabase',
+            );
+          }
 
           // Only retry if this wasn't our last attempt
           if (retryCount < maxRetries - 1) {
             retryCount++;
-            AppLogger.debug(
-              'Will retry fetching tickers (attempt ${retryCount + 1} of $maxRetries)',
-            );
+            if (_debugLogging) {
+              AppLogger.debug(
+                '[news.dart] Will retry fetching tickers (attempt ${retryCount + 1} of $maxRetries)',
+              );
+            }
             await Future.delayed(
               Duration(seconds: retryCount * 2),
             ); // Exponential backoff
@@ -241,17 +273,27 @@ class _NewsState extends State<News> {
           }
         } else {
           // Log first ticker details to verify data structure
-          final firstTicker = tickers.first;
-          AppLogger.debug('First ticker details:');
-          AppLogger.debug('- ID: ${firstTicker.id}');
-          AppLogger.debug('- Image2: ${firstTicker.image2 ?? "null"}');
-          AppLogger.debug('- EnglishHeadline: ${firstTicker.englishHeadline}');
-          AppLogger.debug('- GermanHeadline: ${firstTicker.germanHeadline}');
-          AppLogger.debug('- TeamId: ${firstTicker.teamId ?? "null"}');
+          if (_debugLogging) {
+            final firstTicker = tickers.first;
+            AppLogger.debug('[news.dart] First ticker details:');
+            AppLogger.debug('[news.dart] - ID: ${firstTicker.id}');
+            AppLogger.debug(
+              '[news.dart] - Image2: ${firstTicker.image2 ?? "null"}',
+            );
+            AppLogger.debug(
+              '[news.dart] - EnglishHeadline: ${firstTicker.englishHeadline}',
+            );
+            AppLogger.debug(
+              '[news.dart] - GermanHeadline: ${firstTicker.germanHeadline}',
+            );
+            AppLogger.debug(
+              '[news.dart] - TeamId: ${firstTicker.teamId ?? "null"}',
+            );
 
-          // Log raw JSON for debugging
-          AppLogger.debug('DEBUGGING: First ticker raw JSON:');
-          AppLogger.debug(firstTicker.toJson().toString());
+            // Log raw JSON for debugging
+            AppLogger.debug('[news.dart] DEBUGGING: First ticker raw JSON:');
+            AppLogger.debug('[news.dart] ${firstTicker.toJson().toString()}');
+          }
         }
 
         // Sort by createdAt date
@@ -266,9 +308,11 @@ class _NewsState extends State<News> {
         if (mounted) {
           setState(() {
             articleTickers = sortedTickers;
-            AppLogger.debug(
-              'Updated articleTickers state with ${sortedTickers.length} items',
-            );
+            if (_debugLogging) {
+              AppLogger.debug(
+                '[news.dart] Updated articleTickers state with ${sortedTickers.length} items',
+              );
+            }
           });
         }
 
@@ -284,7 +328,9 @@ class _NewsState extends State<News> {
         AppLogger.error('Stack trace:', stackTrace);
 
         if (retryCount < maxRetries) {
-          AppLogger.debug('Retrying after $waitTime seconds...');
+          if (_debugLogging) {
+            AppLogger.debug('[news.dart] Retrying after $waitTime seconds...');
+          }
           await Future.delayed(Duration(seconds: waitTime));
         }
       }
@@ -292,9 +338,11 @@ class _NewsState extends State<News> {
 
     // If we still have no tickers after all retries, try an alternate approach
     if (success == false && mounted && articleTickers.isEmpty) {
-      AppLogger.debug(
-        'All fetch attempts failed, trying alternate approach with delay',
-      );
+      if (_debugLogging) {
+        AppLogger.debug(
+          '[news.dart] All fetch attempts failed, trying alternate approach with delay',
+        );
+      }
 
       // Try one more time after a longer delay
       Future.delayed(const Duration(seconds: 5), () {
@@ -304,15 +352,17 @@ class _NewsState extends State<News> {
                 if (mounted && newTickers.isNotEmpty) {
                   setState(() {
                     articleTickers = newTickers;
-                    AppLogger.debug(
-                      'Fetch successful on final attempt with ${newTickers.length} tickers',
-                    );
+                    if (_debugLogging) {
+                      AppLogger.debug(
+                        '[news.dart] Fetch successful on final attempt with ${newTickers.length} tickers',
+                      );
+                    }
                   });
                 }
               })
               .catchError((error) {
                 AppLogger.error(
-                  'Final attempt to fetch tickers also failed',
+                  '[news.dart] Final attempt to fetch tickers also failed',
                   error,
                 );
               });
@@ -322,9 +372,13 @@ class _NewsState extends State<News> {
   }
 
   void _onArticleClick(int id) {
-    AppLogger.debug('Navigating to article with ID: $id');
+    if (_debugLogging) {
+      AppLogger.debug('[news.dart] Navigating to article with ID: $id');
+    }
     final article = articles.firstWhere((article) {
-      AppLogger.debug('Checking article ID: ${article.id}');
+      if (_debugLogging) {
+        AppLogger.debug('[news.dart] Checking article ID: ${article.id}');
+      }
       return article.id == id;
     });
     Navigator.push(
@@ -333,11 +387,15 @@ class _NewsState extends State<News> {
     ).then((_) {
       _refreshArticles();
     });
-    AppLogger.debug('Navigating to article $id');
+    if (_debugLogging) AppLogger.debug('[news.dart] Navigating to article $id');
   }
 
   void _refreshArticles() {
-    AppLogger.debug('Refreshing articles with teamId: "$selectedTeamId"');
+    if (_debugLogging) {
+      AppLogger.debug(
+        '[news.dart] Refreshing articles with teamId: "$selectedTeamId"',
+      );
+    }
     setState(() {
       articlesFuture = _fetchArticles();
     });
@@ -357,10 +415,11 @@ class _NewsState extends State<News> {
         languageProvider.currentLanguage == LanguageProvider.english;
     final isWeb = MediaQuery.of(context).size.width > 600;
 
-    // Log MediaQuery size and isWeb flag to validate layout constraints
-    AppLogger.debug(
-      'News build: isWeb=$isWeb, MediaQuery size=${MediaQuery.of(context).size}',
-    );
+    if (_debugLogging) {
+      AppLogger.debug(
+        '[news.dart] News build: isWeb=$isWeb, MediaQuery size=${MediaQuery.of(context).size}',
+      );
+    }
 
     // Get team data for dropdown
     final allTeams =

@@ -1,5 +1,8 @@
 import 'package:app/utils/logger.dart';
 
+// Global debug toggle for ArticleTicker class
+const bool _enableArticleTickerDebug = false;
+
 class ArticleTicker {
   final int id;
   final String englishHeadline;
@@ -29,10 +32,17 @@ class ArticleTicker {
 
   factory ArticleTicker.fromJson(Map<String, dynamic> json) {
     try {
-      AppLogger.debug('Processing article ticker JSON: ${json.toString()}');
+      if (_enableArticleTickerDebug) {
+        AppLogger.debug(
+          '[ArticleTicker] Processing article ticker JSON: ${json.toString()}',
+        );
+      }
 
       // Validate required fields
       if (json['id'] == null) {
+        if (_enableArticleTickerDebug) {
+          AppLogger.debug('[ArticleTicker] Missing required field: id');
+        }
         throw FormatException('Missing required field: id');
       }
 
@@ -42,14 +52,22 @@ class ArticleTicker {
         tickerId = json['id'];
       } else {
         tickerId = int.tryParse(json['id'].toString()) ?? 0;
+        if (_enableArticleTickerDebug) {
+          AppLogger.debug(
+            '[ArticleTicker] Converted string ID to integer: ${json['id']} -> $tickerId',
+          );
+        }
       }
 
       // Helper function to get case-insensitive field value
       T? getField<T>(String fieldName, [T? defaultValue]) {
         final camelCase = fieldName;
         final pascalCase = fieldName[0].toUpperCase() + fieldName.substring(1);
-
-        return json[pascalCase] ?? json[camelCase] ?? defaultValue;
+        final value = json[pascalCase] ?? json[camelCase] ?? defaultValue;
+        if (_enableArticleTickerDebug) {
+          AppLogger.debug('[ArticleTicker] Field "$fieldName" value: $value');
+        }
+        return value;
       }
 
       // Extract fields using case-insensitive helper
@@ -64,12 +82,18 @@ class ArticleTicker {
       final teamId = getField<String>('teamId');
       final status = getField<String>('status');
 
-      AppLogger.debug('Parsed article ticker fields:');
-      AppLogger.debug('- ID: $tickerId');
-      AppLogger.debug('- English Headline: $englishHeadline');
-      AppLogger.debug('- German Headline: $germanHeadline');
-      AppLogger.debug('- Image URL: $image2');
-      AppLogger.debug('- Team ID: $teamId');
+      if (_enableArticleTickerDebug) {
+        AppLogger.debug(
+          '[ArticleTicker] Article ticker fields parsed successfully:',
+        );
+        AppLogger.debug('[ArticleTicker] - ID: $tickerId');
+        AppLogger.debug('[ArticleTicker] - English Headline: $englishHeadline');
+        AppLogger.debug('[ArticleTicker] - German Headline: $germanHeadline');
+        AppLogger.debug('[ArticleTicker] - Image URL: $image2');
+        AppLogger.debug('[ArticleTicker] - Team ID: $teamId');
+        AppLogger.debug('[ArticleTicker] - Created At: $createdAt');
+        AppLogger.debug('[ArticleTicker] - Status: $status');
+      }
 
       return ArticleTicker(
         id: tickerId,
@@ -86,7 +110,7 @@ class ArticleTicker {
       );
     } catch (e, stackTrace) {
       AppLogger.error(
-        'Error parsing article ticker: $e\nStack trace: $stackTrace\nJSON data: ${json.toString()}',
+        '[ArticleTicker] Error parsing article ticker: $e\nStack trace: $stackTrace\nJSON data: ${json.toString()}',
       );
       rethrow;
     }
@@ -94,16 +118,22 @@ class ArticleTicker {
 
   // Get display text based on language
   String getDisplayText(bool isEnglish) {
-    if (isEnglish) {
-      return englishHeadline;
-    } else {
-      return germanHeadline;
+    if (_enableArticleTickerDebug) {
+      AppLogger.debug(
+        '[ArticleTicker] Getting display text in ${isEnglish ? 'English' : 'German'}',
+      );
     }
+    return isEnglish ? englishHeadline : germanHeadline;
   }
 
   // Convert to Article model
   Map<String, dynamic> toArticleJson() {
-    return {
+    if (_enableArticleTickerDebug) {
+      AppLogger.debug(
+        '[ArticleTicker] Converting article ticker $id to Article format',
+      );
+    }
+    final json = {
       'id': id,
       'englishHeadline': englishHeadline,
       'germanHeadline': germanHeadline,
@@ -116,11 +146,20 @@ class ArticleTicker {
       'teamId': teamId,
       'status': status,
     };
+    if (_enableArticleTickerDebug) {
+      AppLogger.debug('[ArticleTicker] Converted to Article JSON: $json');
+    }
+    return json;
   }
 
   // Convert to a regular Map (JSON)
   Map<String, dynamic> toJson() {
-    return {
+    if (_enableArticleTickerDebug) {
+      AppLogger.debug(
+        '[ArticleTicker] Converting article ticker $id to JSON format',
+      );
+    }
+    final json = {
       'id': id,
       'englishHeadline': englishHeadline,
       'germanHeadline': germanHeadline,
@@ -133,5 +172,9 @@ class ArticleTicker {
       'teamId': teamId,
       'status': status,
     };
+    if (_enableArticleTickerDebug) {
+      AppLogger.debug('[ArticleTicker] Converted to JSON: $json');
+    }
+    return json;
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:app/models/roster.dart'; // Assuming Roster model is defined correctly
+import 'package:app/models/roster.dart';
 import 'package:app/services/supabase_service.dart';
 import 'package:app/utils/logger.dart';
+
+// Debug toggle for roster tab view
+const bool _enableRosterTabViewDebug = false;
 
 // --- Define Colors from Style Sheet (still useful for accents/text) ---
 const Color t4lPrimaryGreen = Color(0xFF20452b);
@@ -28,6 +31,7 @@ class RosterTabView extends StatefulWidget {
 }
 
 class _RosterTabViewState extends State<RosterTabView> {
+  static const String _logPrefix = '[RosterTabView] ';
   List<Roster> _roster = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -35,6 +39,9 @@ class _RosterTabViewState extends State<RosterTabView> {
 
   @override
   void initState() {
+    if (_enableRosterTabViewDebug) {
+      AppLogger.debug('${_logPrefix}Initializing RosterTabView');
+    }
     super.initState();
     _loadRoster();
   }
@@ -83,6 +90,12 @@ class _RosterTabViewState extends State<RosterTabView> {
     if (!mounted) return;
 
     try {
+      if (_enableRosterTabViewDebug) {
+        AppLogger.debug(
+          '${_logPrefix}Starting roster load for team: ${widget.teamId}',
+        );
+      }
+
       setState(() {
         _isLoading = true;
         _errorMessage = null;
@@ -108,7 +121,11 @@ class _RosterTabViewState extends State<RosterTabView> {
       if (!mounted) return;
 
       if (roster.isEmpty) {
-        AppLogger.debug('No roster data received for team: ${widget.teamId}');
+        if (_enableRosterTabViewDebug) {
+          AppLogger.debug(
+            '${_logPrefix}No roster data received for team: ${widget.teamId}',
+          );
+        }
         setState(() {
           _errorMessage = 'No roster information available for this team';
           _isLoading = false;
@@ -126,6 +143,11 @@ class _RosterTabViewState extends State<RosterTabView> {
 
       groups.forEach((key, value) {
         value.sort((a, b) => (a.number).compareTo(b.number));
+        if (_enableRosterTabViewDebug) {
+          AppLogger.debug(
+            '${_logPrefix}Sorted ${value.length} players for position: $key',
+          );
+        }
       });
 
       if (!mounted) return;

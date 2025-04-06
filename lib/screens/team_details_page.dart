@@ -23,6 +23,10 @@ const Color t4lSubtleGrey = Color(
   0xFFBDBDBD,
 ); // Colors.grey[400] - For subtle icons/placeholders
 
+// Global debug toggle for TeamDetailsPage
+const bool _enableTeamDetailsDebug = false;
+const String _logPrefix = '[TeamDetailsPage] ';
+
 class TeamDetailsPage extends StatefulWidget {
   final Team team;
   const TeamDetailsPage({super.key, required this.team});
@@ -64,15 +68,19 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
     _teamArticlesSubscription = SupabaseService.subscribeToTeamArticles(
       team: widget.team.teamId,
       onTeamArticlesUpdate: (teamArticlesData) {
-        AppLogger.debug(
-          'Received realtime update with ${teamArticlesData.length} team articles',
-        );
+        if (_enableTeamDetailsDebug) {
+          AppLogger.debug(
+            '${_logPrefix}Received realtime update with ${teamArticlesData.length} team articles',
+          );
+        }
         _processTeamArticles(teamArticlesData);
       },
     );
-    AppLogger.debug(
-      'Set up realtime subscription for team articles for ${widget.team.teamId}',
-    );
+    if (_enableTeamDetailsDebug) {
+      AppLogger.debug(
+        '${_logPrefix}Set up realtime subscription for team articles for ${widget.team.teamId}',
+      );
+    }
   }
 
   Future<void> _loadArticles() async {
@@ -102,7 +110,15 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
               );
         _isLoading = false;
       });
+      if (_enableTeamDetailsDebug) {
+        AppLogger.debug(
+          '${_logPrefix}Loaded and filtered ${_articles.length} articles for team ${widget.team.teamId}',
+        );
+      }
     } catch (e) {
+      if (_enableTeamDetailsDebug) {
+        AppLogger.debug('${_logPrefix}Error loading articles: $e');
+      }
       setState(() {
         _errorMessage = 'Failed to load articles: ${e.toString()}';
         _isLoading = false;
@@ -136,7 +152,9 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
   void _processTeamArticles(List<Map<String, dynamic>> teamArticlesData) {
     // ... (logic remains the same) ...
     if (teamArticlesData.isEmpty) {
-      AppLogger.debug('No team articles data received');
+      if (_enableTeamDetailsDebug) {
+        AppLogger.debug('${_logPrefix}No team articles data received');
+      }
       setState(() {
         _teamArticleTickers = [];
         _isLoadingTeamArticles = false;
@@ -144,7 +162,12 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
       return;
     }
 
-    AppLogger.debug('Processing ${teamArticlesData.length} team articles...');
+    if (_enableTeamDetailsDebug) {
+      AppLogger.debug(
+        '${_logPrefix}Processing ${teamArticlesData.length} team articles...',
+      );
+    }
+
     final String currentTeamId = widget.team.teamId.toUpperCase();
 
     try {
@@ -167,19 +190,31 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
             return articleTeamId == currentTeamId;
           }).toList();
 
-      AppLogger.debug(
-        'Filtered ${teamArticlesData.length} articles to ${filteredArticlesData.length} for team ${widget.team.teamId}',
-      );
+      if (_enableTeamDetailsDebug) {
+        AppLogger.debug(
+          '${_logPrefix}Filtered ${teamArticlesData.length} articles to ${filteredArticlesData.length} for team ${widget.team.teamId}',
+        );
+      }
 
       if (mounted) {
         final List<ArticleTicker> tickers =
             filteredArticlesData
                 .map((json) {
                   try {
+                    if (_enableTeamDetailsDebug) {
+                      AppLogger.debug(
+                        '${_logPrefix}Converting article JSON to TeamArticle: ${json['id']}',
+                      );
+                    }
                     // AppLogger.debug(
                     //   'Converting article JSON to TeamArticle: ${json['id']}',
                     // );
                     final article = TeamArticle.fromJson(json);
+                    if (_enableTeamDetailsDebug) {
+                      AppLogger.debug(
+                        '${_logPrefix}Creating ArticleTicker from TeamArticle ${article.id}',
+                      );
+                    }
                     // AppLogger.debug(
                     //   'Converting TeamArticle to ticker JSON - ID: ${article.id}, Headline: ${article.headlineEnglish}',
                     // );
@@ -188,7 +223,7 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
                     return ArticleTicker.fromJson(tickerJson);
                   } catch (e, stack) {
                     AppLogger.error(
-                      'Error processing article: ${json['id']}',
+                      '${_logPrefix}Error processing article: ${json['id']}',
                       e,
                       stack,
                     );
@@ -202,12 +237,14 @@ class TeamDetailsPageState extends State<TeamDetailsPage>
           _teamArticleTickers = tickers;
           _isLoadingTeamArticles = false;
         });
-        AppLogger.debug(
-          'Successfully processed ${tickers.length} team article tickers for team ${widget.team.teamId}',
-        );
+        if (_enableTeamDetailsDebug) {
+          AppLogger.debug(
+            '${_logPrefix}Successfully processed ${tickers.length} team article tickers for team ${widget.team.teamId}',
+          );
+        }
       }
     } catch (e, stack) {
-      AppLogger.error('Error processing team articles', e, stack);
+      AppLogger.error('${_logPrefix}Error processing team articles', e, stack);
       if (mounted) {
         // Check mounted before calling setState in catch block
         setState(() {
