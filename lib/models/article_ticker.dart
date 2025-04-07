@@ -9,7 +9,9 @@ class ArticleTicker {
   final String germanHeadline;
   final String summaryEnglish;
   final String summaryGerman;
+  final String? image1;
   final String? image2;
+  final String? image3;
   final String? createdAt;
   final String? sourceName;
   final String? sourceUrl;
@@ -22,7 +24,9 @@ class ArticleTicker {
     required this.germanHeadline,
     required this.summaryEnglish,
     required this.summaryGerman,
+    this.image1,
     this.image2,
+    this.image3,
     this.createdAt,
     this.sourceName,
     this.sourceUrl,
@@ -75,7 +79,9 @@ class ArticleTicker {
       final germanHeadline = getField<String>('germanHeadline', '')!;
       final summaryEnglish = getField<String>('summaryEnglish', '')!;
       final summaryGerman = getField<String>('summaryGerman', '')!;
+      final image1 = getField<String>('image1');
       final image2 = getField<String>('image2');
+      final image3 = getField<String>('image3');
       final createdAt = getField<String>('createdAt');
       final sourceName = getField<String>('sourceName');
       final sourceUrl = getField<String>('sourceUrl');
@@ -89,7 +95,9 @@ class ArticleTicker {
         AppLogger.debug('[ArticleTicker] - ID: $tickerId');
         AppLogger.debug('[ArticleTicker] - English Headline: $englishHeadline');
         AppLogger.debug('[ArticleTicker] - German Headline: $germanHeadline');
-        AppLogger.debug('[ArticleTicker] - Image URL: $image2');
+        AppLogger.debug('[ArticleTicker] - Image1: $image1');
+        AppLogger.debug('[ArticleTicker] - Image2: $image2');
+        AppLogger.debug('[ArticleTicker] - Image3: $image3');
         AppLogger.debug('[ArticleTicker] - Team ID: $teamId');
         AppLogger.debug('[ArticleTicker] - Created At: $createdAt');
         AppLogger.debug('[ArticleTicker] - Status: $status');
@@ -101,7 +109,9 @@ class ArticleTicker {
         germanHeadline: germanHeadline,
         summaryEnglish: summaryEnglish,
         summaryGerman: summaryGerman,
+        image1: image1,
         image2: image2,
+        image3: image3,
         createdAt: createdAt,
         sourceName: sourceName,
         sourceUrl: sourceUrl,
@@ -139,7 +149,9 @@ class ArticleTicker {
       'germanHeadline': germanHeadline,
       'ContentEnglish': summaryEnglish,
       'ContentGerman': summaryGerman,
-      'Image1': image2,
+      'Image1': image1,
+      'Image2': image2,
+      'Image3': image3,
       'createdAt': createdAt,
       'SourceName': sourceName,
       'sourceUrl': sourceUrl,
@@ -165,7 +177,9 @@ class ArticleTicker {
       'germanHeadline': germanHeadline,
       'SummaryEnglish': summaryEnglish,
       'SummaryGerman': summaryGerman,
+      'Image1': image1,
       'Image2': image2,
+      'Image3': image3,
       'createdAt': createdAt,
       'SourceName': sourceName,
       'sourceUrl': sourceUrl,
