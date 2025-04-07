@@ -483,323 +483,317 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: AnimatedOpacity(
-          opacity: _dragOffset < 20 ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 200),
-          child: const CustomAppBar(),
-        ),
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+        },
       ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (!_isImageInteractionEnabled) {
-            if (notification is ScrollUpdateNotification) {
-              final newOffset = notification.metrics.pixels.abs();
-              // Only update drag offset if the change is significant
-              if ((newOffset - _dragOffset).abs() > 1) {
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: AnimatedOpacity(
+            opacity: _dragOffset < 20 ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: const CustomAppBar(),
+          ),
+        ),
+        body: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (!_isImageInteractionEnabled) {
+              if (notification is ScrollUpdateNotification) {
+                final newOffset = notification.metrics.pixels.abs();
+                // Only update drag offset if the change is significant
+                if ((newOffset - _dragOffset).abs() > 1) {
+                  setState(() {
+                    _dragOffset = newOffset;
+                  });
+                }
+              } else if (notification is ScrollEndNotification) {
+                // Reset drag offset when scroll ends
                 setState(() {
-                  _dragOffset = newOffset;
+                  _dragOffset = 0;
                 });
               }
-            } else if (notification is ScrollEndNotification) {
-              // Reset drag offset when scroll ends
-              setState(() {
-                _dragOffset = 0;
-              });
             }
-          }
-          return false;
-        },
-        child: PageView.builder(
-          physics:
-              _isImageInteractionEnabled
-                  ? const NeverScrollableScrollPhysics()
-                  : const AlwaysScrollableScrollPhysics(),
-          scrollDirection: Axis.vertical,
-          controller: _pageController,
-          itemCount: _articles.length,
-          onPageChanged: _onPageChanged,
-          itemBuilder: (context, index) {
-            final article = _articles[index];
-            final availableImages = _getAvailableImages(article);
+            return false;
+          },
+          child: PageView.builder(
+            physics:
+                _isImageInteractionEnabled
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+            scrollDirection: Axis.vertical,
+            controller: _pageController,
+            itemCount: _articles.length,
+            onPageChanged: _onPageChanged,
+            itemBuilder: (context, index) {
+              final article = _articles[index];
+              final availableImages = _getAvailableImages(article);
 
-            return Container(
-              color: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (availableImages.isNotEmpty)
-                    Positioned.fill(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return GestureDetector(
-                            onScaleStart:
-                                (details) =>
-                                    _onInteractionStart(details, index),
-                            onScaleUpdate:
-                                (details) =>
-                                    _onInteractionUpdate(details, index),
-                            onScaleEnd:
-                                (details) => _onInteractionEnd(details, index),
-                            child: AnimatedBuilder(
-                              animation: _blurAnimation,
-                              builder: (context, child) {
-                                return BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: _blurAnimation.value,
-                                    sigmaY: _blurAnimation.value,
-                                  ),
-                                  child: child,
-                                );
-                              },
-                              child: ClipRect(
-                                child: PageView.builder(
-                                  controller: _imageControllers[index],
-                                  onPageChanged: (imageIndex) {
-                                    setState(() {
-                                      _articleImageIndices[index] = imageIndex;
-                                    });
-                                  },
-                                  itemCount: availableImages.length,
-                                  itemBuilder: (context, imageIndex) {
-                                    return Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        // Blurred background that extends the image
-                                        Positioned.fill(
-                                          child: ValueListenableBuilder<
-                                            Matrix4
-                                          >(
-                                            valueListenable:
-                                                _transformationControllers[index]!,
-                                            builder: (context, matrix, child) {
-                                              final scale = _getCurrentScale(
-                                                matrix,
-                                              );
-                                              return ShaderMask(
-                                                shaderCallback: (Rect bounds) {
-                                                  return LinearGradient(
-                                                    begin: Alignment.center,
-                                                    end: Alignment.topCenter,
-                                                    colors: [
-                                                      Colors.white,
-                                                      Colors.white.withOpacity(
-                                                        0.9,
+              return Container(
+                color: Colors.black,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (availableImages.isNotEmpty)
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return GestureDetector(
+                              onScaleStart:
+                                  (details) =>
+                                      _onInteractionStart(details, index),
+                              onScaleUpdate:
+                                  (details) =>
+                                      _onInteractionUpdate(details, index),
+                              onScaleEnd:
+                                  (details) => _onInteractionEnd(details, index),
+                              child: AnimatedBuilder(
+                                animation: _blurAnimation,
+                                builder: (context, child) {
+                                  return BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: _blurAnimation.value,
+                                      sigmaY: _blurAnimation.value,
+                                    ),
+                                    child: child,
+                                  );
+                                },
+                                child: ClipRect(
+                                  child: PageView.builder(
+                                    controller: _imageControllers[index],
+                                    onPageChanged: (imageIndex) {
+                                      setState(() {
+                                        _articleImageIndices[index] = imageIndex;
+                                      });
+                                    },
+                                    itemCount: availableImages.length,
+                                    itemBuilder: (context, imageIndex) {
+                                      return Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          // Blurred background that extends the image
+                                          Positioned.fill(
+                                            child: ValueListenableBuilder<
+                                              Matrix4
+                                            >(
+                                              valueListenable:
+                                                  _transformationControllers[index]!,
+                                              builder: (context, matrix, child) {
+                                                final scale = _getCurrentScale(
+                                                  matrix,
+                                                );
+                                                return ShaderMask(
+                                                  shaderCallback: (Rect bounds) {
+                                                    return LinearGradient(
+                                                      begin: Alignment.center,
+                                                      end: Alignment.topCenter,
+                                                      colors: [
+                                                        Colors.white,
+                                                        Colors.white.withOpacity(
+                                                          0.9,
+                                                        ),
+                                                      ],
+                                                    ).createShader(bounds);
+                                                  },
+                                                  child: Transform.scale(
+                                                    scale:
+                                                        1.0 +
+                                                        (scale - _minScale) * 0.1,
+                                                    child: ImageFiltered(
+                                                      imageFilter: ui
+                                                          .ImageFilter.blur(
+                                                        sigmaX: 15.0,
+                                                        sigmaY: 15.0,
                                                       ),
-                                                    ],
-                                                  ).createShader(bounds);
-                                                },
-                                                child: Transform.scale(
-                                                  scale:
-                                                      1.0 +
-                                                      (scale - _minScale) * 0.1,
-                                                  child: ImageFiltered(
-                                                    imageFilter: ui
-                                                        .ImageFilter.blur(
-                                                      sigmaX: 15.0,
-                                                      sigmaY: 15.0,
-                                                    ),
-                                                    child: Image.network(
-                                                      availableImages[imageIndex],
-                                                      fit: BoxFit.cover,
-                                                      alignment:
-                                                          Alignment.center,
-                                                      errorBuilder:
-                                                          (_, __, ___) =>
-                                                              _buildFallbackImage(),
+                                                      child: Image.network(
+                                                        availableImages[imageIndex],
+                                                        fit: BoxFit.cover,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        errorBuilder:
+                                                            (_, __, ___) =>
+                                                                _buildFallbackImage(),
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              );
-                                            },
+                                                );
+                                              },
+                                            ),
                                           ),
-                                        ),
-                                        // Main image with InteractiveViewer
-                                        InteractiveViewer(
-                                          transformationController:
-                                              _transformationControllers[index],
-                                          minScale: _minScale,
-                                          maxScale: _maxScale,
-                                          panEnabled: false,
-                                          scaleEnabled: false,
-                                          clipBehavior: Clip.none,
-                                          child: AnimatedBuilder(
-                                            animation: _kenBurnsController,
-                                            builder: (context, child) {
-                                              return !_isImageInteractionEnabled
-                                                  ? Transform.scale(
-                                                    scale:
-                                                        _scaleAnimation.value,
-                                                    child: Transform.translate(
-                                                      offset: Offset(
-                                                        _panAnimation.value.dx *
-                                                            constraints
-                                                                .maxWidth,
-                                                        _panAnimation.value.dy *
-                                                            constraints
-                                                                .maxHeight,
+                                          // Main image with InteractiveViewer
+                                          InteractiveViewer(
+                                            transformationController:
+                                                _transformationControllers[index],
+                                            minScale: _minScale,
+                                            maxScale: _maxScale,
+                                            panEnabled: true, // Enable panning
+                                            scaleEnabled: true, // Enable scaling
+                                            boundaryMargin: const EdgeInsets.all(80.0),
+                                            clipBehavior: Clip.none,
+                                            child: AnimatedBuilder(
+                                              animation: _kenBurnsController,
+                                              builder: (context, child) {
+                                                return !_isImageInteractionEnabled
+                                                    ? Transform.scale(
+                                                      scale:
+                                                          _scaleAnimation.value,
+                                                      child: Transform.translate(
+                                                        offset: Offset(
+                                                          _panAnimation.value.dx *
+                                                              constraints
+                                                                  .maxWidth,
+                                                          _panAnimation.value.dy *
+                                                              constraints
+                                                                  .maxHeight,
+                                                        ),
+                                                        child: child,
                                                       ),
-                                                      child: child,
-                                                    ),
-                                                  )
-                                                  : child!;
-                                            },
-                                            child: Hero(
-                                              tag:
-                                                  'article-image-${article.id}-$imageIndex',
-                                              child: Container(
-                                                width: constraints.maxWidth,
-                                                height: constraints.maxHeight,
-                                                child: Image.network(
-                                                  availableImages[imageIndex],
-                                                  fit: BoxFit.cover,
-                                                  alignment: Alignment.center,
-                                                  errorBuilder:
-                                                      (_, __, ___) =>
-                                                          _buildFallbackImage(),
-                                                  loadingBuilder: (
-                                                    context,
-                                                    child,
-                                                    loadingProgress,
-                                                  ) {
-                                                    if (loadingProgress == null)
-                                                      return child;
-                                                    return Center(
-                                                      child: CircularProgressIndicator(
-                                                        value:
-                                                            loadingProgress
-                                                                        .expectedTotalBytes !=
-                                                                    null
-                                                                ? loadingProgress
-                                                                        .cumulativeBytesLoaded /
-                                                                    loadingProgress
-                                                                        .expectedTotalBytes!
-                                                                : null,
-                                                        color: Colors.white,
-                                                      ),
-                                                    );
-                                                  },
+                                                    )
+                                                    : child!;
+                                              },
+                                              child: Hero(
+                                                tag:
+                                                    'article-image-${article.id}-$imageIndex',
+                                                child: Container(
+                                                  width: constraints.maxWidth,
+                                                  height: constraints.maxHeight,
+                                                  child: Image.network(
+                                                    availableImages[imageIndex],
+                                                    fit: BoxFit.cover,
+                                                    alignment: Alignment.center,
+                                                    errorBuilder:
+                                                        (_, __, ___) =>
+                                                            _buildFallbackImage(),
+                                                    loadingBuilder: (
+                                                      context,
+                                                      child,
+                                                      loadingProgress,
+                                                    ) {
+                                                      if (loadingProgress == null)
+                                                        return child;
+                                                      return Center(
+                                                        child: CircularProgressIndicator(
+                                                          value:
+                                                              loadingProgress
+                                                                          .expectedTotalBytes !=
+                                                                      null
+                                                                  ? loadingProgress
+                                                                          .cumulativeBytesLoaded /
+                                                                      loadingProgress
+                                                                          .expectedTotalBytes!
+                                                                  : null,
+                                                          color: Colors.white,
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                        ],
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
 
-                  // Enhanced gradient overlay for better text readability
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.4),
-                            Colors.black.withOpacity(0.9),
-                          ],
-                          stops: const [0.3, 0.7, 1.0],
+                    // Enhanced gradient overlay for better text readability
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.4),
+                              Colors.black.withOpacity(0.9),
+                            ],
+                            stops: const [0.3, 0.7, 1.0],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  // Content with slide-up animation
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: _bottomPadding,
-                    child: SafeArea(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (article.teamId != null)
-                            Container(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.5),
-                                    blurRadius: 10,
+                    // Content with slide-up animation
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: _bottomPadding,
+                      child: SafeArea(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (article.teamId != null)
+                              Container(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Hero(
+                                  tag: 'team-logo-${article.id}',
+                                  child: Image.asset(
+                                    'assets/logos/${article.teamId!.toLowerCase()}.png',
+                                    height: isWeb ? 40 : 30,
+                                    errorBuilder:
+                                        (_, __, ___) => const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              isEnglish
+                                  ? article.englishHeadline
+                                  : article.germanHeadline,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.8),
                                     offset: const Offset(0, 2),
+                                    blurRadius: 4,
+                                  ),
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    offset: const Offset(0, 1),
+                                    blurRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: Hero(
-                                tag: 'team-logo-${article.id}',
-                                child: Image.asset(
-                                  'assets/logos/${article.teamId!.toLowerCase()}.png',
-                                  height: isWeb ? 40 : 30,
-                                  errorBuilder:
-                                      (_, __, ___) => const SizedBox.shrink(),
-                                ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.black.withOpacity(0.3),
                               ),
-                            ),
-                          Text(
-                            isEnglish
-                                ? article.englishHeadline
-                                : article.germanHeadline,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.8),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.black.withOpacity(0.3),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatDate(article.createdAt, isEnglish),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.8),
-                                        offset: const Offset(0, 1),
-                                        blurRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (article.sourceName != null)
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
                                   Text(
-                                    article.sourceName!,
+                                    _formatDate(article.createdAt, isEnglish),
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: Colors.white,
-                                      fontWeight: FontWeight.bold,
                                       shadows: [
                                         Shadow(
                                           color: Colors.black.withOpacity(0.8),
@@ -809,74 +803,77 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
                                       ],
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.black.withOpacity(0.4),
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              isEnglish
-                                  ? article.summaryEnglish
-                                  : article.summaryGerman,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: Colors.white,
-                                height: 1.5,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.8),
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 2,
-                                  ),
+                                  if (article.sourceName != null)
+                                    Text(
+                                      article.sourceName!,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black.withOpacity(0.8),
+                                            offset: const Offset(0, 1),
+                                            blurRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 24),
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.black.withOpacity(0.4),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Text(
+                                isEnglish
+                                    ? article.summaryEnglish
+                                    : article.summaryGerman,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: Colors.white,
+                                  height: 1.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.8),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  // Swipe indicator with enhanced visibility
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 20,
-                    child: AnimatedOpacity(
-                      opacity: _dragOffset < 50 ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.keyboard_arrow_up,
-                                color: Colors.white.withOpacity(0.9),
-                                size: 32,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.5),
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                '${_currentPage + 1}/${_articles.length}',
-                                style: theme.textTheme.bodySmall?.copyWith(
+                    // Swipe indicator with enhanced visibility
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 20,
+                      child: AnimatedOpacity(
+                        opacity: _dragOffset < 50 ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.keyboard_arrow_up,
                                   color: Colors.white.withOpacity(0.9),
+                                  size: 32,
                                   shadows: [
                                     Shadow(
                                       color: Colors.black.withOpacity(0.5),
@@ -885,17 +882,30 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  '${_currentPage + 1}/${_articles.length}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
