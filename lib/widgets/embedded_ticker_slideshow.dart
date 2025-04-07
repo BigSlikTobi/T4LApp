@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:app/ticker_slideshow_page.dart';
 import 'package:app/services/supabase_service.dart';
+import 'package:app/widgets/vertical_feed_page.dart';
 
 class EmbeddedTickerSlideshow extends StatelessWidget {
   const EmbeddedTickerSlideshow({super.key});
@@ -26,7 +26,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
             if (context.mounted) {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => TickerSlideshowPage(articles: tickers),
+                  builder: (context) => VerticalFeedPage(articles: tickers),
                 ),
               );
             }
@@ -86,12 +86,7 @@ class EmbeddedTickerSlideshow extends StatelessWidget {
                         color: Color.fromRGBO(0, 0, 0, 0.4),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Color.fromRGBO(
-                            255,
-                            255,
-                            255,
-                            0.3,
-                          ), // replaced: Colors.white.withOpacity(0.3)
+                          color: Color.fromRGBO(255, 255, 255, 0.3),
                           width: 1,
                         ),
                       ),

@@ -21,6 +21,9 @@ dependencies:
   supabase_flutter: ^2.8.4
   google_fonts: ^6.2.1
   url_launcher: ^6.2.3
+  page_transition: ^2.1.0
+  flutter_staggered_animations: ^1.1.1
+  vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
@@ -33,10 +36,9 @@ flutter:
     - assets/images/T4LLogo.png
     - assets/images/placeholder.jpeg
     - assets/images/Facility.png
-    - assets/logos/
     - assets/images/noHuddle.jpg
     - assets/images/noHuddleCrop.jpg
-
+    - assets/logos/
   fonts:
     - family: Noto Sans
       fonts:

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:app/ticker_slideshow_page.dart';
 import 'package:app/models/article_ticker.dart';
 import 'package:app/utils/logger.dart';
+import 'package:app/widgets/vertical_feed_page.dart';
 
 // Global debug toggle for TeamArticlesSlideshow
 const bool _enableTeamArticlesSlideshowDebug = false;
@@ -45,12 +45,12 @@ class TeamArticlesSlideshow extends StatelessWidget {
         HapticFeedback.lightImpact();
         if (_enableTeamArticlesSlideshowDebug) {
           AppLogger.debug(
-            '[TeamArticlesSlideshow] Navigating to TickerSlideshowPage with ${teamArticles.length} articles',
+            '[TeamArticlesSlideshow] Navigating to VerticalFeedPage with ${teamArticles.length} articles',
           );
         }
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => TickerSlideshowPage(articles: teamArticles),
+            builder: (context) => VerticalFeedPage(articles: teamArticles),
           ),
         );
       },
@@ -107,9 +107,9 @@ class TeamArticlesSlideshow extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Color.fromRGBO(0, 0, 0, 0.7),
+                        Colors.black.withOpacity(0.7),
                       ],
-                      stops: const [0.6, 1.0],
+                      stops: const [0.5, 1.0],
                     ),
                   ),
                 ),
@@ -128,12 +128,7 @@ class TeamArticlesSlideshow extends StatelessWidget {
                     color: Color.fromRGBO(0, 0, 0, 0.4),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Color.fromRGBO(
-                        255,
-                        255,
-                        255,
-                        0.3,
-                      ), // replaced Colors.white.withOpacity(0.3)
+                      color: Color.fromRGBO(255, 255, 255, 0.3),
                       width: 1,
                     ),
                   ),
@@ -154,12 +149,7 @@ class TeamArticlesSlideshow extends StatelessWidget {
                         Text(
                           '${teamArticles.length} articles available',
                           style: TextStyle(
-                            color: Color.fromRGBO(
-                              255,
-                              255,
-                              255,
-                              0.7,
-                            ), // replaced Colors.white.withOpacity(0.7)
+                            color: Colors.white.withOpacity(0.7),
                             fontSize: 12,
                           ),
                         ),

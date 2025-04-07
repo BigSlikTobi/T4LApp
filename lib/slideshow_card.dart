@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:app/models/article.dart';
+import 'package:app/models/article_ticker.dart';
+import 'package:app/widgets/vertical_feed_page.dart';
 
 class SlideShowCard extends StatefulWidget {
   final List<Widget> slides;
@@ -174,7 +176,6 @@ class QuickNewsSlideShow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use actual articles if available, otherwise use a placeholder
     List<Widget> slides =
         articles.isNotEmpty
             ? articles
@@ -182,9 +183,40 @@ class QuickNewsSlideShow extends StatelessWidget {
                 .map((article) => _buildArticleSlide(article, context))
                 .toList()
             : [_buildPlaceholderSlide()];
+
     return SlideShowCard(
       slides: slides,
       logoImagePath: 'assets/images/noHuddle.jpg',
+      onTap: () {
+        if (articles.isNotEmpty) {
+          // Convert articles to article tickers for vertical feed
+          final tickers =
+              articles
+                  .map(
+                    (article) => ArticleTicker(
+                      id: article.id,
+                      englishHeadline: article.englishHeadline,
+                      germanHeadline: article.germanHeadline,
+                      summaryEnglish: article.englishArticle,
+                      summaryGerman: article.germanArticle,
+                      image2: article.imageUrl,
+                      createdAt: article.createdAt?.toIso8601String(),
+                      sourceName: article.sourceAuthor,
+                      sourceUrl: article.sourceUrl,
+                      teamId: article.teamId,
+                      status: article.status,
+                    ),
+                  )
+                  .toList();
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerticalFeedPage(articles: tickers),
+            ),
+          );
+        }
+      },
     );
   }
 
