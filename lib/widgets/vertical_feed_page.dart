@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:app/models/article_ticker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,8 @@ import 'package:app/utils/logger.dart';
 import 'package:app/widgets/custom_app_bar.dart';
 import 'dart:math' as math;
 import 'package:vector_math/vector_math_64.dart' as vector;
+import 'dart:ui';
+import 'dart:ui' as ui;
 
 const bool _debugVerticalFeed = false;
 
@@ -23,30 +26,41 @@ class VerticalFeedPage extends StatefulWidget {
 class _VerticalFeedPageState extends State<VerticalFeedPage>
     with TickerProviderStateMixin {
   late PageController _pageController;
+  Map<int, PageController> _imageControllers = {};
   late AnimationController _kenBurnsController;
   late Animation<Offset> _panAnimation;
   late Animation<double> _scaleAnimation;
   int _currentPage = 0;
+  Map<int, int> _articleImageIndices = {}; // Track image index for each article
   late List<ArticleTicker> _articles;
   double _dragOffset = 0;
   final double _bottomPadding = 80.0;
   final _random = math.Random();
-  final _transformationController = TransformationController();
+  Map<int, TransformationController> _transformationControllers = {};
   late final AnimationController _animationController;
+  late final AnimationController _imageTransitionController;
   Animation<Matrix4>? _animation;
-  final double _minScale = 1.0;
-  final double _maxScale = 2.0;
+  final double _minScale = 1.05; // Increased from 1.0 to ensure full coverage
+  final double _maxScale = 3.0; // Increased max scale for more zoom range
+  final double _panResistance = 2.5; // Added pan resistance factor
   bool _isImageInteractionEnabled = false;
+  Timer? _imageTransitionTimer;
+  late AnimationController _blurAnimationController;
+  late Animation<double> _blurAnimation;
 
   @override
   void initState() {
     super.initState();
     _articles = widget.articles;
-    _pageController = PageController(
-      viewportFraction: 0.999,
-    ); // Prevents peek of next page
+    _pageController = PageController(viewportFraction: 0.999);
 
-    // Initialize Ken Burns animation controller
+    // Initialize controllers for each article
+    for (var i = 0; i < _articles.length; i++) {
+      _imageControllers[i] = PageController();
+      _articleImageIndices[i] = 0;
+      _transformationControllers[i] = TransformationController();
+    }
+
     _kenBurnsController = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
@@ -57,8 +71,26 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
       duration: const Duration(milliseconds: 200),
     );
 
+    _imageTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _blurAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    _blurAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
+      CurvedAnimation(
+        parent: _blurAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _setupKenBurnsAnimation();
     _kenBurnsController.forward();
+    _startImageTransitionTimer();
 
     if (_debugVerticalFeed) {
       AppLogger.debug(
@@ -68,20 +100,23 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
   }
 
   void _setupKenBurnsAnimation() {
-    final startScale = 1.1;
-    final endScale = 1.2;
+    final startScale = 1.1; // Increased from 1.1
+    final endScale = 1.4; // Slightly increased for more dramatic effect
 
     // Calculate max safe translation based on scale to prevent black edges
-    final maxTranslation = (endScale - 1.0) / 2;
+    final maxTranslation = (endScale - 1.0) / 3.0; // Reduced from 2.0
+
+    // Add some padding to the translation range to ensure coverage
+    final safeMaxTranslation = maxTranslation + 0.03;
 
     final startOffset = Offset(
-      _random.nextDouble() * maxTranslation * 2 - maxTranslation,
-      _random.nextDouble() * maxTranslation * 2 - maxTranslation,
+      _random.nextDouble() * safeMaxTranslation * 2 - safeMaxTranslation,
+      _random.nextDouble() * safeMaxTranslation * 2 - safeMaxTranslation,
     );
 
     final endOffset = Offset(
-      _random.nextDouble() * maxTranslation * 2 - maxTranslation,
-      _random.nextDouble() * maxTranslation * 2 - maxTranslation,
+      _random.nextDouble() * safeMaxTranslation * 2 - safeMaxTranslation,
+      _random.nextDouble() * safeMaxTranslation * 2 - safeMaxTranslation,
     );
 
     _panAnimation = Tween<Offset>(begin: startOffset, end: endOffset).animate(
@@ -104,76 +139,190 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
 
   @override
   void dispose() {
+    _blurAnimationController.dispose();
     _pageController.dispose();
+    // Dispose all controllers
+    for (var controller in _imageControllers.values) {
+      controller.dispose();
+    }
+    for (var controller in _transformationControllers.values) {
+      controller.dispose();
+    }
     _kenBurnsController.dispose();
-    _transformationController.dispose();
     _animationController.dispose();
+    _imageTransitionController.dispose();
+    _imageTransitionTimer?.cancel();
     super.dispose();
+  }
+
+  void _startImageTransitionTimer() {
+    _imageTransitionTimer?.cancel();
+    _imageTransitionTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!_isImageInteractionEnabled && mounted) {
+        final images = _getAvailableImages(_articles[_currentPage]);
+        if (images.length > 1) {
+          final currentIndex = _articleImageIndices[_currentPage] ?? 0;
+          final nextIndex = (currentIndex + 1) % images.length;
+
+          if (_debugVerticalFeed) {
+            AppLogger.debug(
+              '[VerticalFeedPage] Transitioning images for article ${_articles[_currentPage].id}',
+            );
+          }
+
+          // Start blur transition
+          _blurAnimationController.forward().then((_) {
+            // Change page when blur is at maximum
+            final controller = _imageControllers[_currentPage];
+            if (controller != null && mounted) {
+              controller
+                  .animateToPage(
+                    nextIndex,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  )
+                  .then((_) {
+                    // Reverse blur after page change
+                    if (mounted) {
+                      _blurAnimationController.reverse();
+                    }
+                  });
+            }
+          });
+        }
+      }
+    });
   }
 
   void _onPageChanged(int page) {
     HapticFeedback.lightImpact();
+
+    // Reset controllers and state for the new page
+    if (_debugVerticalFeed) {
+      AppLogger.debug('[VerticalFeedPage] Page changed to $page');
+    }
+
+    // Reset transformation controller for the new page
+    _transformationControllers[page]?.value = Matrix4.identity();
+
     setState(() {
       _currentPage = page;
-      _dragOffset = 0; // Reset drag offset when changing pages
+      _dragOffset = 0;
+
+      // Reset image index for the new page if not already set
+      if (!_articleImageIndices.containsKey(page)) {
+        _articleImageIndices[page] = 0;
+      }
     });
 
-    // Reset and restart Ken Burns effect on page change
+    // Reset Ken Burns effect
     _kenBurnsController.reset();
     _setupKenBurnsAnimation();
     _kenBurnsController.forward();
 
+    // Restart image transition timer with a small delay to allow page transition to complete
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _startImageTransitionTimer();
+      }
+    });
+
     if (_debugVerticalFeed) {
-      AppLogger.debug('[VerticalFeedPage] Swiped to article $page');
+      final images = _getAvailableImages(_articles[page]);
+      AppLogger.debug('[VerticalFeedPage] New page setup complete:');
+      AppLogger.debug(
+        '[VerticalFeedPage] - Available images: ${images.length}',
+      );
+      AppLogger.debug(
+        '[VerticalFeedPage] - Current image index: ${_articleImageIndices[page]}',
+      );
     }
   }
 
-  void _onInteractionStart(ScaleStartDetails details) {
+  void _onInteractionStart(ScaleStartDetails details, int articleIndex) {
     _kenBurnsController.stop();
     _isImageInteractionEnabled = true;
     // Cancel any running animations
     _animationController.stop();
-    _animation?.removeListener(_onAnimateTransform);
+    _animation?.removeListener(() => _onAnimateTransform(articleIndex));
     _animation = null;
   }
 
-  void _onInteractionUpdate(ScaleUpdateDetails details) {
+  void _onInteractionUpdate(ScaleUpdateDetails details, int articleIndex) {
     if (!_isImageInteractionEnabled) return;
 
-    final Matrix4 matrix = Matrix4.copy(_transformationController.value);
+    final controller = _transformationControllers[articleIndex];
+    if (controller == null) return;
 
-    // Handle scale
-    matrix.scale(details.scale, details.scale, 1.0);
+    final Matrix4 matrix = Matrix4.copy(controller.value);
+    final size = MediaQuery.of(context).size;
 
-    // Get current scale to check bounds
+    // Get current scale before applying new transformation
     final currentScale = _getCurrentScale(matrix);
+    final nextScale = currentScale * details.scale;
 
-    if (currentScale >= _minScale && currentScale <= _maxScale) {
-      // Apply translation only if scale is within bounds
-      matrix.translate(
-        details.focalPointDelta.dx / currentScale,
-        details.focalPointDelta.dy / currentScale,
-      );
+    // Enhanced scale calculation with smoother progression
+    final scale = nextScale.clamp(_minScale, _maxScale);
+    final scaleFactor = scale / currentScale;
 
-      // Check if the translation keeps the image within bounds
-      if (_isTransformationWithinBounds(matrix)) {
-        _transformationController.value = matrix;
-      }
-    }
+    // Apply scale from focal point with enhanced precision
+    final focalPoint = details.localFocalPoint;
+    matrix.translate(focalPoint.dx, focalPoint.dy);
+    matrix.scale(scaleFactor, scaleFactor);
+    matrix.translate(-focalPoint.dx, -focalPoint.dy);
+
+    // Apply translation with increased resistance as scale decreases
+    // This makes panning harder when zoomed out and easier when zoomed in
+    final resistance =
+        _panResistance * (_maxScale - scale) / (_maxScale - _minScale);
+    final adjustedDelta = Offset(
+      details.focalPointDelta.dx / (scale * resistance),
+      details.focalPointDelta.dy / (scale * resistance),
+    );
+
+    // Get current translation
+    final translation = vector.Vector3(
+      matrix.getColumn(3).x,
+      matrix.getColumn(3).y,
+      0.0,
+    );
+
+    // Calculate maximum allowed translation based on current scale
+    // Increased bounds to allow more movement with blur effect
+    final maxTranslationX = size.width * (scale - 1.0) / (1.8 * scale);
+    final maxTranslationY = size.height * (scale - 1.0) / (1.8 * scale);
+
+    // Calculate new translation while respecting tighter bounds
+    final newX = (translation.x + adjustedDelta.dx).clamp(
+      -maxTranslationX,
+      maxTranslationX,
+    );
+    final newY = (translation.y + adjustedDelta.dy).clamp(
+      -maxTranslationY,
+      maxTranslationY,
+    );
+
+    // Apply bounded translation
+    matrix.setTranslation(vector.Vector3(newX, newY, 0.0));
+
+    controller.value = matrix;
   }
 
-  void _onInteractionEnd(ScaleEndDetails details) {
+  void _onInteractionEnd(ScaleEndDetails details, int articleIndex) {
     _isImageInteractionEnabled = false;
-    final Matrix4 matrix = Matrix4.copy(_transformationController.value);
+    final controller = _transformationControllers[articleIndex];
+    if (controller == null) return;
+
+    final Matrix4 matrix = Matrix4.copy(controller.value);
     final currentScale = _getCurrentScale(matrix);
 
     // If scale is out of bounds, animate back to nearest bound
     if (currentScale < _minScale) {
-      _animateScale(_minScale);
+      _animateScale(_minScale, articleIndex);
     } else if (currentScale > _maxScale) {
-      _animateScale(_maxScale);
+      _animateScale(_maxScale, articleIndex);
     } else if (!_isTransformationWithinBounds(matrix)) {
-      _animateBackToBounds();
+      _animateBackToBounds(articleIndex);
     }
 
     // Restart Ken Burns effect
@@ -190,65 +339,86 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
 
   bool _isTransformationWithinBounds(Matrix4 matrix) {
     final scale = _getCurrentScale(matrix);
+    final size = MediaQuery.of(context).size;
+
+    // Get current translation
     final translation = vector.Vector3(
       matrix.getColumn(3).x,
       matrix.getColumn(3).y,
       0.0,
     );
 
-    // Calculate maximum allowed translation based on scale
-    final maxTranslation = (scale - 1.0) / 2;
+    // Calculate maximum allowed translation based on current scale and viewport
+    // Adjust bounds to match the new translation limits
+    final maxTranslationX = size.width * (scale - 1.0) / (1.8 * scale);
+    final maxTranslationY = size.height * (scale - 1.0) / (1.8 * scale);
 
-    return translation.x.abs() <= maxTranslation &&
-        translation.y.abs() <= maxTranslation;
+    return translation.x.abs() <= maxTranslationX &&
+        translation.y.abs() <= maxTranslationY;
   }
 
-  void _animateScale(double targetScale) {
-    final Matrix4 endMatrix = Matrix4.copy(_transformationController.value);
+  void _animateScale(double targetScale, int articleIndex) {
+    final controller = _transformationControllers[articleIndex];
+    if (controller == null) return;
+
+    final Matrix4 endMatrix = Matrix4.copy(controller.value);
     final currentScale = _getCurrentScale(endMatrix);
     final double factor = targetScale / currentScale;
     endMatrix.scale(factor, factor, 1.0);
 
-    _animateMatrix(endMatrix);
+    _animateMatrix(endMatrix, articleIndex);
   }
 
-  void _animateBackToBounds() {
-    final Matrix4 matrix = Matrix4.copy(_transformationController.value);
+  void _animateBackToBounds(int articleIndex) {
+    final controller = _transformationControllers[articleIndex];
+    if (controller == null) return;
+
+    final matrix = Matrix4.copy(controller.value);
     final scale = _getCurrentScale(matrix);
+    final size = MediaQuery.of(context).size;
+
+    // Get current translation
     final translation = vector.Vector3(
       matrix.getColumn(3).x,
       matrix.getColumn(3).y,
       0.0,
     );
 
-    // Calculate maximum allowed translation based on current scale
-    final maxTranslation = (scale - 1.0) / 2;
+    // Calculate maximum allowed translation based on current scale and viewport
+    // Adjust bounds to match the new translation limits
+    final maxTranslationX = size.width * (scale - 1.0) / (1.8 * scale);
+    final maxTranslationY = size.height * (scale - 1.0) / (1.8 * scale);
 
     // Clamp translation to bounds
-    final clampedX = translation.x.clamp(-maxTranslation, maxTranslation);
-    final clampedY = translation.y.clamp(-maxTranslation, maxTranslation);
+    final clampedX = translation.x.clamp(-maxTranslationX, maxTranslationX);
+    final clampedY = translation.y.clamp(-maxTranslationY, maxTranslationY);
 
-    matrix.setColumn(3, vector.Vector4(clampedX, clampedY, 0.0, 1.0));
+    // Create new matrix with bounded translation
+    final boundedMatrix = Matrix4.copy(matrix)
+      ..setTranslation(vector.Vector3(clampedX, clampedY, 0.0));
 
-    _animateMatrix(matrix);
+    _animateMatrix(boundedMatrix, articleIndex);
   }
 
-  void _animateMatrix(Matrix4 end) {
-    _animation?.removeListener(_onAnimateTransform);
+  void _animateMatrix(Matrix4 end, int articleIndex) {
+    final controller = _transformationControllers[articleIndex];
+    if (controller == null) return;
 
-    _animation = Matrix4Tween(
-      begin: _transformationController.value,
-      end: end,
-    ).animate(
+    _animation?.removeListener(() => _onAnimateTransform(articleIndex));
+
+    _animation = Matrix4Tween(begin: controller.value, end: end).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    _animation!.addListener(_onAnimateTransform);
+    _animation!.addListener(() => _onAnimateTransform(articleIndex));
     _animationController.forward(from: 0);
   }
 
-  void _onAnimateTransform() {
-    _transformationController.value = _animation!.value;
+  void _onAnimateTransform(int articleIndex) {
+    final controller = _transformationControllers[articleIndex];
+    if (controller != null && _animation != null) {
+      controller.value = _animation!.value;
+    }
   }
 
   String _formatDate(String? dateInput, bool isEnglish) {
@@ -265,6 +435,31 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
       );
       return isEnglish ? 'Invalid date' : 'Ungültiges Datum';
     }
+  }
+
+  List<String> _getAvailableImages(ArticleTicker article) {
+    final images = [
+      if (article.image1 != null && article.image1!.isNotEmpty) article.image1!,
+      if (article.image2 != null && article.image2!.isNotEmpty) article.image2!,
+      if (article.image3 != null && article.image3!.isNotEmpty) article.image3!,
+    ];
+
+    if (_debugVerticalFeed) {
+      AppLogger.debug(
+        '[VerticalFeedPage] Available images for article ${article.id}:',
+      );
+      AppLogger.debug(
+        '[VerticalFeedPage] - Image1: ${article.image1 ?? "null"}',
+      );
+      AppLogger.debug(
+        '[VerticalFeedPage] - Image2: ${article.image2 ?? "null"}',
+      );
+      AppLogger.debug(
+        '[VerticalFeedPage] - Image3: ${article.image3 ?? "null"}',
+      );
+    }
+
+    return images;
   }
 
   @override
@@ -329,75 +524,180 @@ class _VerticalFeedPageState extends State<VerticalFeedPage>
           onPageChanged: _onPageChanged,
           itemBuilder: (context, index) {
             final article = _articles[index];
+            final availableImages = _getAvailableImages(article);
+
             return Container(
               color: Colors.black,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Animated background with Ken Burns effect and gesture handling
-                  if (article.image2 != null && article.image2!.isNotEmpty)
+                  if (availableImages.isNotEmpty)
                     Positioned.fill(
-                      child: GestureDetector(
-                        onScaleStart: _onInteractionStart,
-                        onScaleUpdate: _onInteractionUpdate,
-                        onScaleEnd: _onInteractionEnd,
-                        child: InteractiveViewer(
-                          transformationController: _transformationController,
-                          minScale: _minScale,
-                          maxScale: _maxScale,
-                          panEnabled: false,
-                          scaleEnabled: false,
-                          child: AnimatedBuilder(
-                            animation: _kenBurnsController,
-                            builder: (context, child) {
-                              return !_isImageInteractionEnabled
-                                  ? Transform.scale(
-                                    scale: _scaleAnimation.value,
-                                    child: Transform.translate(
-                                      offset: Offset(
-                                        _panAnimation.value.dx *
-                                            MediaQuery.of(context).size.width,
-                                        _panAnimation.value.dy *
-                                            MediaQuery.of(context).size.height,
-                                      ),
-                                      child: child,
-                                    ),
-                                  )
-                                  : child!;
-                            },
-                            child: Hero(
-                              tag: 'article-image-${article.id}',
-                              child: Image.network(
-                                article.image2!,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (_, __, ___) => _buildFallbackImage(),
-                                loadingBuilder: (
-                                  context,
-                                  child,
-                                  loadingProgress,
-                                ) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      value:
-                                          loadingProgress.expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
-                                      color: Colors.white,
-                                    ),
-                                  );
-                                },
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return GestureDetector(
+                            onScaleStart:
+                                (details) =>
+                                    _onInteractionStart(details, index),
+                            onScaleUpdate:
+                                (details) =>
+                                    _onInteractionUpdate(details, index),
+                            onScaleEnd:
+                                (details) => _onInteractionEnd(details, index),
+                            child: AnimatedBuilder(
+                              animation: _blurAnimation,
+                              builder: (context, child) {
+                                return BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: _blurAnimation.value,
+                                    sigmaY: _blurAnimation.value,
+                                  ),
+                                  child: child,
+                                );
+                              },
+                              child: ClipRect(
+                                child: PageView.builder(
+                                  controller: _imageControllers[index],
+                                  onPageChanged: (imageIndex) {
+                                    setState(() {
+                                      _articleImageIndices[index] = imageIndex;
+                                    });
+                                  },
+                                  itemCount: availableImages.length,
+                                  itemBuilder: (context, imageIndex) {
+                                    return Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        // Blurred background that extends the image
+                                        Positioned.fill(
+                                          child: ValueListenableBuilder<
+                                            Matrix4
+                                          >(
+                                            valueListenable:
+                                                _transformationControllers[index]!,
+                                            builder: (context, matrix, child) {
+                                              final scale = _getCurrentScale(
+                                                matrix,
+                                              );
+                                              return ShaderMask(
+                                                shaderCallback: (Rect bounds) {
+                                                  return LinearGradient(
+                                                    begin: Alignment.center,
+                                                    end: Alignment.topCenter,
+                                                    colors: [
+                                                      Colors.white,
+                                                      Colors.white.withOpacity(
+                                                        0.9,
+                                                      ),
+                                                    ],
+                                                  ).createShader(bounds);
+                                                },
+                                                child: Transform.scale(
+                                                  scale:
+                                                      1.0 +
+                                                      (scale - _minScale) * 0.1,
+                                                  child: ImageFiltered(
+                                                    imageFilter: ui
+                                                        .ImageFilter.blur(
+                                                      sigmaX: 15.0,
+                                                      sigmaY: 15.0,
+                                                    ),
+                                                    child: Image.network(
+                                                      availableImages[imageIndex],
+                                                      fit: BoxFit.cover,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      errorBuilder:
+                                                          (_, __, ___) =>
+                                                              _buildFallbackImage(),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        // Main image with InteractiveViewer
+                                        InteractiveViewer(
+                                          transformationController:
+                                              _transformationControllers[index],
+                                          minScale: _minScale,
+                                          maxScale: _maxScale,
+                                          panEnabled: false,
+                                          scaleEnabled: false,
+                                          clipBehavior: Clip.none,
+                                          child: AnimatedBuilder(
+                                            animation: _kenBurnsController,
+                                            builder: (context, child) {
+                                              return !_isImageInteractionEnabled
+                                                  ? Transform.scale(
+                                                    scale:
+                                                        _scaleAnimation.value,
+                                                    child: Transform.translate(
+                                                      offset: Offset(
+                                                        _panAnimation.value.dx *
+                                                            constraints
+                                                                .maxWidth,
+                                                        _panAnimation.value.dy *
+                                                            constraints
+                                                                .maxHeight,
+                                                      ),
+                                                      child: child,
+                                                    ),
+                                                  )
+                                                  : child!;
+                                            },
+                                            child: Hero(
+                                              tag:
+                                                  'article-image-${article.id}-$imageIndex',
+                                              child: Container(
+                                                width: constraints.maxWidth,
+                                                height: constraints.maxHeight,
+                                                child: Image.network(
+                                                  availableImages[imageIndex],
+                                                  fit: BoxFit.cover,
+                                                  alignment: Alignment.center,
+                                                  errorBuilder:
+                                                      (_, __, ___) =>
+                                                          _buildFallbackImage(),
+                                                  loadingBuilder: (
+                                                    context,
+                                                    child,
+                                                    loadingProgress,
+                                                  ) {
+                                                    if (loadingProgress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        value:
+                                                            loadingProgress
+                                                                        .expectedTotalBytes !=
+                                                                    null
+                                                                ? loadingProgress
+                                                                        .cumulativeBytesLoaded /
+                                                                    loadingProgress
+                                                                        .expectedTotalBytes!
+                                                                : null,
+                                                        color: Colors.white,
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
+
                   // Enhanced gradient overlay for better text readability
                   Positioned.fill(
                     child: DecoratedBox(
