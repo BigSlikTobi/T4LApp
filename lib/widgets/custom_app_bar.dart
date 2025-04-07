@@ -21,87 +21,98 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final double baseHeight = kToolbarHeight - 12;
     final double increasedHeight = baseHeight * 1.5;
 
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      toolbarHeight: kToolbarHeight,
-      title: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6.0),
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: Image.asset(
-            'assets/images/T4LLogo.png',
-            height: increasedHeight,
-            errorBuilder: (context, error, stackTrace) {
-              if (customAppBarDebug) {
-                debugPrint(
-                  '[CustomAppBar] Error loading logo asset: $error\nStackTrace: $stackTrace',
-                );
-              }
-              return const Icon(Icons.error);
-            },
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        ),
+        ],
       ),
-      centerTitle: true,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8.0),
-          child: PopupMenuButton<String>(
-            offset: const Offset(0, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+      child: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: kToolbarHeight,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Image.asset(
+              'assets/images/T4LLogo.png',
+              height: increasedHeight,
+              errorBuilder: (context, error, stackTrace) {
+                if (customAppBarDebug) {
+                  debugPrint(
+                    '[CustomAppBar] Error loading logo asset: $error\nStackTrace: $stackTrace',
+                  );
+                }
+                return const Icon(Icons.error);
+              },
             ),
-            onOpened: () {
-              if (customAppBarDebug) {
-                debugPrint('[CustomAppBar] Language menu opened');
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Color.fromRGBO(0, 0, 0, 0.3)),
-              ),
-              child: Text(
-                languageProvider.currentLanguage == LanguageProvider.german
-                    ? '🇩🇪'
-                    : '🇺🇸',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-            onSelected: (String value) {
-              if (customAppBarDebug) {
-                debugPrint('[CustomAppBar] Language changed to: $value');
-              }
-              languageProvider.switchLanguage(value);
-            },
-            itemBuilder:
-                (BuildContext context) => <PopupMenuEntry<String>>[
-                  const PopupMenuItem<String>(
-                    value: LanguageProvider.english,
-                    child: Row(
-                      children: [
-                        Text('🇺🇸', style: TextStyle(fontSize: 12)),
-                        SizedBox(width: 8),
-                        Text('English'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: LanguageProvider.german,
-                    child: Row(
-                      children: [
-                        Text('🇩🇪', style: TextStyle(fontSize: 12)),
-                        SizedBox(width: 8),
-                        Text('Deutsch'),
-                      ],
-                    ),
-                  ),
-                ],
           ),
         ),
-      ],
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: PopupMenuButton<String>(
+              offset: const Offset(0, 40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              onOpened: () {
+                if (customAppBarDebug) {
+                  debugPrint('[CustomAppBar] Language menu opened');
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color.fromRGBO(0, 0, 0, 0.3)),
+                ),
+                child: Text(
+                  languageProvider.currentLanguage == LanguageProvider.german
+                      ? '🇩🇪'
+                      : '🇺🇸',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+              onSelected: (String value) {
+                if (customAppBarDebug) {
+                  debugPrint('[CustomAppBar] Language changed to: $value');
+                }
+                languageProvider.switchLanguage(value);
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: LanguageProvider.english,
+                  child: Row(
+                    children: [
+                      Text('🇺🇸', style: TextStyle(fontSize: 12)),
+                      SizedBox(width: 8),
+                      Text('English'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: LanguageProvider.german,
+                  child: Row(
+                    children: [
+                      Text('🇩🇪', style: TextStyle(fontSize: 12)),
+                      SizedBox(width: 8),
+                      Text('Deutsch'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
