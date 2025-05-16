@@ -1,4 +1,4 @@
-# app
+# app -DEPRECATED DON'T USE-
 
 A new Flutter project.
 
